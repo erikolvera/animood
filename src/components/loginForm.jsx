@@ -55,7 +55,9 @@ const LoginForm = () => {
             className="border w-full mb-3 p-2 rounded bg-black text-white placeholder-white"
           />
           {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
-          <p className="pb-4">Forgot password?</p>
+          <p className="pb-4">
+            <Link to="/forgot-password">Forgot password?</Link>
+          </p>
           <button
             type="submit"
             disabled={loading}
