@@ -6,6 +6,8 @@ import './App.css'
 import Signup from './components/Signup'
 import LoginForm from './components/loginForm'
 import Dashboard from './Pages/Dashboard'
+import ForgotPassword from './components/ForgotPassword'
+import ResetPassword from './components/ResetPassword'
 
 function App() {
   const [user, setUser] = useState(null)
@@ -39,6 +41,8 @@ function App() {
         <Route path="/" element={user ? <Dashboard logout={() => supabase.auth.signOut()} /> : <Navigate to="/signin" />} />
         <Route path="/signup" element={user ? <Navigate to="/" /> : <Signup />} />
         <Route path="/signin" element={user ? <Navigate to="/" /> : <LoginForm />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Routes>
     </div>
   )
