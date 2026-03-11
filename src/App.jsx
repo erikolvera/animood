@@ -9,6 +9,7 @@ import Dashboard from './Pages/Dashboard'
 import ForgotPassword from './components/ForgotPassword'
 import ResetPassword from './components/ResetPassword'
 import AnimeDetails from "./Pages/AnimeDetails";
+import AnimeEpisodes from './Pages/AnimeEpisodes'
 
 function App() {
   const [user, setUser] = useState(null)
@@ -48,6 +49,7 @@ function App() {
               : <Navigate to="/signin" />
           } />
         <Route path="/anime/:id" element={user ? <AnimeDetails /> : <Navigate to="/signin" />} />
+        <Route path="/anime/:id/episodes" element={user ? <AnimeEpisodes /> : <Navigate to="/signin" />} />
       </Routes>
     </div>
   )
