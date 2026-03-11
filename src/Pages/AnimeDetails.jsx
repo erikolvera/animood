@@ -1,14 +1,93 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { supabase } from "../supabaseClient";
+
+function formatDate(dateString) {
+  return new Date(dateString).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
 
 function AnimeDetails() {
   const { id } = useParams();
 
   const [anime, setAnime] = useState(null);
-  const [episodes, setEpisodes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [episodesLoading, setEpisodesLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [episodes, setEpisodes] = useState([]);
+  const [episodesLoading, setEpisodesLoading] = useState(true);
+  const [loadingMoreEpisodes, setLoadingMoreEpisodes] = useState(false);
+  const [episodePage, setEpisodePage] = useState(1);
+  const [hasMoreEpisodes, setHasMoreEpisodes] = useState(true);
+  const [visibleEpisodeCount, setVisibleEpisodeCount] = useState(20);
+
+  const [rating, setRating] = useState(0);
+  const [reviewText, setReviewText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const [currentUser, setCurrentUser] = useState(null);
+  const [existingRatingId, setExistingRatingId] = useState(null);
+
+  const [showReviews, setShowReviews] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsPage, setReviewsPage] = useState(0);
+  const [hasMoreReviews, setHasMoreReviews] = useState(true);
+
+  async function fetchEpisodes(page = 1, replace = false) {
+    try {
+      if (page === 1) {
+        setEpisodesLoading(true);
+      } else {
+        setLoadingMoreEpisodes(true);
+      }
+
+      const response = await fetch(
+        `https://api.jikan.moe/v4/anime/${id}/episodes?page=${page}`
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch episodes");
+      }
+
+      const data = await response.json();
+      const newEpisodes = data.data || [];
+
+      if (replace) {
+        setEpisodes(newEpisodes);
+      } else {
+        setEpisodes((prev) => [...prev, ...newEpisodes]);
+      }
+
+      setEpisodePage(page);
+      setHasMoreEpisodes(!!data.pagination?.has_next_page);
+    } catch (err) {
+      console.error(err.message);
+    } finally {
+      setEpisodesLoading(false);
+      setLoadingMoreEpisodes(false);
+    }
+  }
+
+  async function handleLoadMoreEpisodes() {
+    const nextVisibleCount = visibleEpisodeCount + 20;
+
+    if (nextVisibleCount <= episodes.length) {
+      setVisibleEpisodeCount(nextVisibleCount);
+      return;
+    }
+
+    if (hasMoreEpisodes && !loadingMoreEpisodes) {
+      await fetchEpisodes(episodePage + 1, false);
+    }
+
+    setVisibleEpisodeCount(nextVisibleCount);
+  }
+
+  const hasMoreEpisodesToShow = visibleEpisodeCount < episodes.length || hasMoreEpisodes;
 
   useEffect(() => {
     async function fetchAnimeDetails() {
@@ -30,29 +109,167 @@ function AnimeDetails() {
         setLoading(false);
       }
     }
+    
+    async function fetchCurrentUserAndExistingRating() {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
 
-    async function fetchEpisodes() {
-      try {
-        setEpisodesLoading(true);
+      if (userError) {
+        console.error("Error getting user:", userError.message);
+        return;
+      }
 
-        const response = await fetch(`https://api.jikan.moe/v4/anime/${id}/episodes`);
+      setCurrentUser(user);
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch episodes");
-        }
+      if (!user) return;
 
-        const data = await response.json();
-        setEpisodes(data.data || []);
-      } catch (err) {
-        console.error(err.message);
-      } finally {
-        setEpisodesLoading(false);
+      const { data, error } = await supabase
+        .from("anime_ratings")
+        .select("id, rating, review_text")
+        .eq("user_id", user.id)
+        .eq("anime_id", parseInt(id))
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error fetching existing rating:", error.message);
+        return;
+      }
+
+      if (data) {
+        setExistingRatingId(data.id);
+        setRating(data.rating ?? 0);
+        setReviewText(data.review_text ?? "");
+      } else {
+        setExistingRatingId(null);
+        setRating(0);
+        setReviewText("");
       }
     }
 
     fetchAnimeDetails();
-    fetchEpisodes();
+    setEpisodes([]);
+    setEpisodePage(1);
+    setHasMoreEpisodes(true);
+    setVisibleEpisodeCount(20);
+    fetchEpisodes(1, true);
+    fetchCurrentUserAndExistingRating();
+    
   }, [id]);
+
+  async function submitAnimeRating() {
+    if (!currentUser) {
+      alert("You must be logged in to rate an anime.");
+      return;
+    }
+
+    if (rating < 1 || rating > 10) {
+      alert("Please select a rating from 1 to 10.");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      const { error } = await supabase.from("anime_ratings").upsert(
+        {
+          user_id: currentUser.id,
+          anime_id: parseInt(id),
+          rating: rating,
+          review_text: reviewText,
+        },
+        {
+          onConflict: "user_id,anime_id",
+        }
+      );
+
+      if (error) throw error;
+
+      alert(existingRatingId ? "Rating updated!" : "Rating saved!");
+
+      // Refresh the user's rating so UI stays in sync
+      const { data, error: fetchError } = await supabase
+        .from("anime_ratings")
+        .select("id, rating, review_text")
+        .eq("user_id", currentUser.id)
+        .eq("anime_id", parseInt(id))
+        .maybeSingle();
+
+      if (fetchError) {
+        console.error(fetchError.message);
+      } else if (data) {
+        setExistingRatingId(data.id);
+        setRating(data.rating ?? 0);
+        setReviewText(data.review_text ?? "");
+      }
+
+      // If reviews are open, refresh them from the start
+      if (showReviews) {
+        resetAndLoadReviews();
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save rating.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function loadReviews(pageToLoad = 0, replace = false) {
+    try {
+      setReviewsLoading(true);
+
+      const from = pageToLoad * 10;
+      const to = from + 9;
+
+      const { data, error } = await supabase
+        .from("anime_ratings")
+        .select("id, user_id, rating, review_text, created_at, updated_at")
+        .eq("anime_id", parseInt(id))
+        .order("created_at", { ascending: false })
+        .range(from, to);
+
+      if (error) throw error;
+
+      const newReviews = data || [];
+
+      if (replace) {
+        setReviews(newReviews);
+      } else {
+        setReviews((prev) => [...prev, ...newReviews]);
+      }
+
+      setHasMoreReviews(newReviews.length === 10);
+      setReviewsPage(pageToLoad);
+    } catch (err) {
+      console.error("Error loading reviews:", err.message);
+    } finally {
+      setReviewsLoading(false);
+    }
+  }
+
+  async function resetAndLoadReviews() {
+    setReviews([]);
+    setReviewsPage(0);
+    setHasMoreReviews(true);
+    await loadReviews(0, true);
+  }
+
+  async function handleToggleReviews() {
+    const nextValue = !showReviews;
+    setShowReviews(nextValue);
+
+    if (nextValue && reviews.length === 0) {
+      await resetAndLoadReviews();
+    }
+  }
+
+  async function handleLoadMoreReviews() {
+    if (!hasMoreReviews || reviewsLoading) return;
+    await loadReviews(reviewsPage + 1, false);
+  }
+
 
   if (loading) {
     return <p style={{ padding: "20px" }}>Loading anime details...</p>;
@@ -93,6 +310,7 @@ function AnimeDetails() {
 
       <p><strong>Score:</strong> {anime.score ?? "N/A"}</p>
       <p><strong>Episodes:</strong> {anime.episodes ?? "Unknown"}</p>
+      <p><strong>Status:</strong> {anime.status ?? "Unknown"}</p>
       <p><strong>Rating:</strong> {anime.rating ?? "Unknown"}</p>
 
       <h2>Synopsis</h2>
@@ -101,8 +319,112 @@ function AnimeDetails() {
       <hr style={{ margin: "24px 0" }} />
 
       <h2>Anime Rating / Review</h2>
-      <button disabled>Rate Anime (work in progress)</button>
 
+      {existingRatingId ? (
+        <p style={{ color: "green" }}>You already rated this anime. You can update it below.</p>
+      ) : (
+        <p>You have not rated this anime yet.</p>
+      )}
+
+      <div style={{ marginTop: "16px", marginBottom: "24px" }}>
+        <label><strong>Rating (1–10)</strong></label>
+        <br />
+        <select
+          value={rating}
+          onChange={(e) => setRating(Number(e.target.value))}
+          style={{ marginTop: "8px", padding: "8px" }}
+        >
+          <option value={0}>Select rating</option>
+          {[...Array(10)].map((_, i) => (
+            <option key={i + 1} value={i + 1}>
+              {i + 1}
+            </option>
+          ))}
+        </select>
+
+        <br /><br />
+
+        <label><strong>Review</strong></label>
+        <br />
+        <textarea
+          placeholder="Write your review..."
+          value={reviewText}
+          onChange={(e) => setReviewText(e.target.value)}
+          rows="5"
+          cols="60"
+          style={{ marginTop: "8px", padding: "8px" }}
+        />
+
+        <br /><br />
+
+        <button onClick={submitAnimeRating} disabled={submitting}>
+          {submitting
+            ? "Saving..."
+            : existingRatingId
+            ? "Update Rating"
+            : "Submit Rating"}
+        </button>
+      </div>
+
+      <hr style={{ margin: "24px 0" }} />
+
+      <h2>Community Reviews</h2>
+
+      <button onClick={handleToggleReviews} style={{ marginBottom: "16px" }}>
+        {showReviews ? "Hide Reviews" : "Show Reviews"}
+      </button>
+
+      {showReviews && (
+        <div>
+          {reviewsLoading && reviews.length === 0 ? (
+            <p>Loading reviews...</p>
+          ) : reviews.length === 0 ? (
+            <p>No reviews yet.</p>
+          ) : (
+            <>
+              {reviews.map((review) => (
+                <div
+                  key={review.id}
+                  style={{
+                    border: "1px solid #ccc",
+                    padding: "12px",
+                    marginBottom: "12px",
+                    borderRadius: "8px",
+                  }}
+                >
+                  <p>
+                    <strong>Rating:</strong> {review.rating}/10
+                  </p>
+
+                  <p>
+                    <strong>Date:</strong> {formatDate(review.created_at)}
+                  </p>
+
+                  {currentUser && review.user_id === currentUser.id && (
+                    <p style={{ color: "blue" }}><strong>Your review</strong></p>
+                  )}
+
+                  <p>{review.review_text || "No written review provided."}</p>
+                </div>
+              ))}
+
+              {hasMoreReviews && (
+                <button
+                  onClick={handleLoadMoreReviews}
+                  disabled={reviewsLoading}
+                >
+                  {reviewsLoading ? "Loading..." : "Load 10 More"}
+                </button>
+              )}
+
+              {!hasMoreReviews && reviews.length > 0 && (
+                <p>No more reviews to load.</p>
+              )}
+            </>
+          )}
+        </div>
+      )}
+      
       <hr style={{ margin: "24px 0" }} />
 
       <h2>Episodes</h2>
@@ -113,7 +435,7 @@ function AnimeDetails() {
         <p>No episodes found.</p>
       ) : (
         <div>
-          {episodes.map((episode) => (
+          {episodes.slice(0, visibleEpisodeCount).map((episode) => (
             <div
               key={episode.mal_id}
               style={{
@@ -129,24 +451,31 @@ function AnimeDetails() {
 
               {episode.aired && (
                 <p>
-                    <strong>Aired:</strong> {new Date(episode.aired).toLocaleDateString(
-                    "en-US",
-                    {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                    }
-                    )}
+                  <strong>Aired:</strong> {formatDate(episode.aired)}
                 </p>
               )}
 
-              <button disabled>Rate Episode (work in progress)</button>
+              <button disabled>Rate Episode (coming soon)</button>
             </div>
           ))}
+
+          
+
+          {hasMoreEpisodesToShow && (
+            <button
+              onClick={handleLoadMoreEpisodes}
+              disabled={loadingMoreEpisodes}
+              style={{ marginTop: "12px" }}
+            >
+              {loadingMoreEpisodes ? "Loading..." : "Load 20 More Episodes"}
+            </button>
+          )}
+
+          {!hasMoreEpisodesToShow && episodes.length > 0 && (
+            <p>No more episodes to load.</p>
+          )}
         </div>
       )}
-
-      
     </div>
   );
 }
