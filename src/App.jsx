@@ -8,6 +8,7 @@ import LoginForm from './components/loginForm'
 import Dashboard from './Pages/Dashboard'
 import ForgotPassword from './components/ForgotPassword'
 import ResetPassword from './components/ResetPassword'
+import AnimeDetails from "./Pages/AnimeDetails";
 
 function App() {
   const [user, setUser] = useState(null)
@@ -36,13 +37,17 @@ function App() {
 
   return (
     <div>
-      <h1 className="text-center mb-8">Login System</h1>
       <Routes>
-        <Route path="/" element={user ? <Dashboard logout={() => supabase.auth.signOut()} /> : <Navigate to="/signin" />} />
-        <Route path="/signup" element={user ? <Navigate to="/" /> : <Signup />} />
-        <Route path="/signin" element={user ? <Navigate to="/" /> : <LoginForm />} />
+        <Route path="/" element={user ? <Navigate to="/dashboard" /> : <Navigate to="/signin" />} />
+        <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <Signup />} />
+        <Route path="/signin" element={user ? <Navigate to="/dashboard" /> : <LoginForm />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/dashboard" element={user
+              ? <Dashboard logout={() => supabase.auth.signOut()} />
+              : <Navigate to="/signin" />
+          } />
+        <Route path="/anime/:id" element={user ? <AnimeDetails /> : <Navigate to="/signin" />} />
       </Routes>
     </div>
   )
