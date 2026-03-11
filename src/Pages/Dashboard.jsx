@@ -27,28 +27,12 @@ function Dashboard({ logout }) {
     setLoading(true)
 
     try {
-      const { data: {session}} = await supabase.auth.getSession()
+      const {error} = await supabase.rpc("delete_my_account")
 
-      if (!session || !session.user) {
-        throw new Error("No active session. Please log in again")
-      }
-
-      // call your backend/edge function to delete user
-      const res = await fetch("https://wfxxbbocpfzzrsnzykco.supabase.co/functions/v1/delete-user", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}` // <-- important
-        },
-        body: JSON.stringify({ userId: session.user.id })
-      })
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err?.error || "Failed to delete account")
-      }
+      if (error) throw error
 
       alert("Account deleted successfully")
+
       await supabase.auth.signOut()
       logout()
       navigate("/login")
