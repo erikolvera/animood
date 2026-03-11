@@ -17,13 +17,6 @@ function AnimeDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [episodes, setEpisodes] = useState([]);
-  const [episodesLoading, setEpisodesLoading] = useState(true);
-  const [loadingMoreEpisodes, setLoadingMoreEpisodes] = useState(false);
-  const [episodePage, setEpisodePage] = useState(1);
-  const [hasMoreEpisodes, setHasMoreEpisodes] = useState(true);
-  const [visibleEpisodeCount, setVisibleEpisodeCount] = useState(20);
-
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -36,58 +29,6 @@ function AnimeDetails() {
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewsPage, setReviewsPage] = useState(0);
   const [hasMoreReviews, setHasMoreReviews] = useState(true);
-
-  async function fetchEpisodes(page = 1, replace = false) {
-    try {
-      if (page === 1) {
-        setEpisodesLoading(true);
-      } else {
-        setLoadingMoreEpisodes(true);
-      }
-
-      const response = await fetch(
-        `https://api.jikan.moe/v4/anime/${id}/episodes?page=${page}`
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch episodes");
-      }
-
-      const data = await response.json();
-      const newEpisodes = data.data || [];
-
-      if (replace) {
-        setEpisodes(newEpisodes);
-      } else {
-        setEpisodes((prev) => [...prev, ...newEpisodes]);
-      }
-
-      setEpisodePage(page);
-      setHasMoreEpisodes(!!data.pagination?.has_next_page);
-    } catch (err) {
-      console.error(err.message);
-    } finally {
-      setEpisodesLoading(false);
-      setLoadingMoreEpisodes(false);
-    }
-  }
-
-  async function handleLoadMoreEpisodes() {
-    const nextVisibleCount = visibleEpisodeCount + 20;
-
-    if (nextVisibleCount <= episodes.length) {
-      setVisibleEpisodeCount(nextVisibleCount);
-      return;
-    }
-
-    if (hasMoreEpisodes && !loadingMoreEpisodes) {
-      await fetchEpisodes(episodePage + 1, false);
-    }
-
-    setVisibleEpisodeCount(nextVisibleCount);
-  }
-
-  const hasMoreEpisodesToShow = visibleEpisodeCount < episodes.length || hasMoreEpisodes;
 
   useEffect(() => {
     async function fetchAnimeDetails() {
@@ -149,11 +90,6 @@ function AnimeDetails() {
     }
 
     fetchAnimeDetails();
-    setEpisodes([]);
-    setEpisodePage(1);
-    setHasMoreEpisodes(true);
-    setVisibleEpisodeCount(20);
-    fetchEpisodes(1, true);
     fetchCurrentUserAndExistingRating();
     
   }, [id]);
@@ -240,7 +176,7 @@ function AnimeDetails() {
         setReviews((prev) => [...prev, ...newReviews]);
       }
 
-      setHasMoreReviews(newReviews.length === 10);
+      (newReviews.length === 10);
       setReviewsPage(pageToLoad);
     } catch (err) {
       console.error("Error loading reviews:", err.message);
@@ -386,10 +322,12 @@ function AnimeDetails() {
                 <div
                   key={review.id}
                   style={{
-                    border: "1px solid #ccc",
-                    padding: "12px",
-                    marginBottom: "12px",
+                    border: "1px solid #444",
+                    padding: "10px",
+                    marginBottom: "10px",
                     borderRadius: "8px",
+                    backgroundColor: "#1f2937",
+                    color: "#f9fafb",
                   }}
                 >
                   <p>
@@ -428,54 +366,22 @@ function AnimeDetails() {
       <hr style={{ margin: "24px 0" }} />
 
       <h2>Episodes</h2>
+      <p>View the episode list and rate individual episodes on a separate page.</p>
 
-      {episodesLoading ? (
-        <p>Loading episodes...</p>
-      ) : episodes.length === 0 ? (
-        <p>No episodes found.</p>
-      ) : (
-        <div>
-          {episodes.slice(0, visibleEpisodeCount).map((episode) => (
-            <div
-              key={episode.mal_id}
-              style={{
-                border: "1px solid #ccc",
-                padding: "12px",
-                marginBottom: "12px",
-                borderRadius: "8px",
-              }}
-            >
-              <p>
-                <strong>Episode {episode.mal_id}:</strong> {episode.title}
-              </p>
-
-              {episode.aired && (
-                <p>
-                  <strong>Aired:</strong> {formatDate(episode.aired)}
-                </p>
-              )}
-
-              <button disabled>Rate Episode (coming soon)</button>
-            </div>
-          ))}
-
-          
-
-          {hasMoreEpisodesToShow && (
-            <button
-              onClick={handleLoadMoreEpisodes}
-              disabled={loadingMoreEpisodes}
-              style={{ marginTop: "12px" }}
-            >
-              {loadingMoreEpisodes ? "Loading..." : "Load 20 More Episodes"}
-            </button>
-          )}
-
-          {!hasMoreEpisodesToShow && episodes.length > 0 && (
-            <p>No more episodes to load.</p>
-          )}
-        </div>
-      )}
+      <Link
+        to={`/anime/${id}/episodes`}
+        style={{
+          display: "inline-block",
+          padding: "10px 16px",
+          border: "1px solid #ccc",
+          borderRadius: "8px",
+          textDecoration: "none",
+          color: "inherit",
+          marginTop: "8px",
+        }}
+      >
+        View Episodes
+      </Link>
     </div>
   );
 }
