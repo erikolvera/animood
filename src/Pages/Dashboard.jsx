@@ -1,63 +1,144 @@
-import { useState } from "react"
-import { supabase } from "../supabaseClient"
-import { useNavigate } from "react-router-dom"
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "../supabaseClient";
+import { searchAnime } from "../services/jikanApi";
 
 function Dashboard({ logout }) {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
-  const [showDelete, setShowDelete] = useState(false)
-  const [confirmText, setConfirmText] = useState("")
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [query, setQuery] = useState("");
+  const [animeResults, setAnimeResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState("");
+
+  const [showDelete, setShowDelete] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   async function handleLogout() {
-    await supabase.auth.signOut()
-    alert("Logout successful!")
-    logout()
+    await supabase.auth.signOut();
+    alert("Logout successful!");
+    logout();
   }
 
+  useEffect(() => {
+    const delay = setTimeout(() => {
+      async function fetchAnime() {
+        if (!query.trim()) {
+          setAnimeResults([]);
+          setSearchError("");
+          return;
+        }
+
+        try {
+          setSearchLoading(true);
+          setSearchError("");
+
+          const results = await searchAnime(query);
+          setAnimeResults(results);
+        } catch (err) {
+          setSearchError(err.message);
+        } finally {
+          setSearchLoading(false);
+        }
+      }
+
+      fetchAnime();
+    }, 400);
+
+    return () => clearTimeout(delay);
+  }, [query]);
+
   async function handleDeleteAccount() {
-    setError("")
+    setDeleteError("");
 
     if (confirmText !== "confirm") {
-      setError('You must type "confirm" to delete your account.')
-      return
+      setDeleteError('You must type "confirm" to delete your account.');
+      return;
     }
 
-    setLoading(true)
+    setDeleteLoading(true);
 
     try {
-      const {error} = await supabase.rpc("delete_my_account")
+      const { error } = await supabase.rpc("delete_my_account");
 
-      if (error) throw error
+      if (error) throw error;
 
-      alert("Account deleted successfully")
+      alert("Account deleted successfully");
 
-      await supabase.auth.signOut()
-      logout()
-      navigate("/login")
-
+      await supabase.auth.signOut();
+      logout();
+      navigate("/signup");
     } catch (err) {
-      setError(err.message)
-    }
-    finally {
-      setLoading(false)
+      setDeleteError(err.message);
+    } finally {
+      setDeleteLoading(false);
     }
   }
 
   return (
-    <div>
+    <div style={{ padding: "20px" }}>
+      <h1>Animood Dashboard</h1>
 
-      <h2>Dashboard</h2>
+      <h2>Search Anime</h2>
+
+      <input
+        type="text"
+        placeholder="Search for an anime..."
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        style={{
+          width: "100%",
+          maxWidth: "400px",
+          padding: "10px",
+          marginBottom: "20px",
+        }}
+      />
+
+      {searchLoading && <p>Loading...</p>}
+      {searchError && <p style={{ color: "red" }}>{searchError}</p>}
+
+      <div>
+        {animeResults.map((anime) => (
+          <Link
+            key={anime.mal_id}
+            to={`/anime/${anime.mal_id}`}
+            style={{ textDecoration: "none", color: "inherit" }}
+          >
+            <div
+              style={{
+                border: "1px solid #ccc",
+                padding: "12px",
+                marginBottom: "12px",
+                borderRadius: "8px",
+              }}
+            >
+              <h4>{anime.title}</h4>
+
+              {anime.images?.jpg?.image_url && (
+                <img
+                  src={anime.images.jpg.image_url}
+                  alt={anime.title}
+                  width="120"
+                />
+              )}
+
+              <p>{anime.synopsis?.slice(0, 200) || "No synopsis available."}</p>
+              <p>Score: {anime.score ?? "N/A"}</p>
+              <p>Episodes: {anime.episodes ?? "Unknown"}</p>
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      <hr />
 
       <p>You are logged in.</p>
 
-      <button onClick={handleLogout}>
-        Logout
-      </button>
+      <button onClick={handleLogout}>Logout</button>
 
       <div style={{ marginTop: "40px" }}>
-
         {!showDelete && (
           <button
             onClick={() => setShowDelete(true)}
@@ -82,28 +163,28 @@ function Dashboard({ logout }) {
 
             <button
               onClick={handleDeleteAccount}
-              disabled={loading}
+              disabled={deleteLoading}
               style={{
                 marginLeft: "10px",
                 backgroundColor: "red",
                 color: "white",
                 padding: "6px 10px",
-                borderRadius: "4px"
+                borderRadius: "4px",
               }}
             >
-              {loading ? "Deleting..." : "Permanently Delete"}
+              {deleteLoading ? "Deleting..." : "Permanently Delete"}
             </button>
 
-            {error && (
+            {deleteError && (
               <p style={{ color: "red", marginTop: "10px" }}>
-                {error}
+                {deleteError}
               </p>
             )}
           </div>
         )}
       </div>
     </div>
-  )
+  );
 }
 
-export default Dashboard
+export default Dashboard;
