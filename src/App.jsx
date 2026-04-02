@@ -48,8 +48,8 @@ function App() {
               ? <Dashboard logout={() => supabase.auth.signOut()} />
               : <Navigate to="/signin" />
           } />
-        <Route path="/anime/:id" element={user ? <AnimeDetails /> : <Navigate to="/signin" />} />
-        <Route path="/anime/:id/episodes" element={user ? <AnimeEpisodes /> : <Navigate to="/signin" />} />
+        <Route path="/anime/:id" element={<AnimeDetails />} />
+        <Route path="/anime/:id/episodes" element={<AnimeEpisodes />} />
       </Routes>
     </div>
   )
