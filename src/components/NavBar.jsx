@@ -44,10 +44,9 @@ const NavBar = () => {
 
     return (
         <nav className="sticky top-0 z-50 w-full bg-[#fefcf4]/80 backdrop-blur-xl border-b border-[#f5f4eb]">
-            <div className="flex items-center justify-start gap-5 h-20 max-w-[1440px] mx-auto px-8">
-                {/* Brand Logo */}
+            <div className="flex items-center justify-start gap-5 h-14 max-w-[1440px] mx-auto px-8">
                 <div className="flex items-center gap-2">
-                    <span className="text-2xl font-bold tracking-tighter text-[#b6353a]">
+                    <span className="text-xl font-bold tracking-tighter text-[#b6353a]">
                         AniMood
                     </span>
                 </div>
@@ -83,17 +82,17 @@ const NavBar = () => {
                 {/* Action Icons & Profile */}
                 <div className="flex items-center ml-auto gap-6">
                     <div className="flex relative group">
-                        
+
                         <input
                             type="text"
                             placeholder="Search anime..."
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            className="bg-[#f5f4eb] text-black border-none rounded-full py-2 px-4 pl-10 text-sm focus:ring-2 focus:ring-[#b6353a]/20 w-64 transition-all"
+                            className="bg-[#f5f4eb] text-black border-none rounded-full py-1.5 px-4 pl-9 text-xs focus:ring-2 focus:ring-[#b6353a]/20 w-56 transition-all"
                         />
                         <svg
-                            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400"
+                            className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -134,7 +133,7 @@ const NavBar = () => {
                             </div>
                         )}
                     </div>
-                    <div className="w-10 h-10 rounded-full bg-stone-200 overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#b6353a] transition-all">
+                    <div className="w-8 h-8 rounded-full bg-stone-200 overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#b6353a] transition-all">
                         <img
                             src="https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"
                             alt="User profile"
