@@ -23,6 +23,8 @@ function AnimeDetails() {
 
   const [currentUser, setCurrentUser] = useState(null);
   const [existingRatingId, setExistingRatingId] = useState(null);
+  const [inWatchlist, setInWatchlist] = useState(false);
+  const [watchlistLoading, setWatchlistLoading] = useState(false);
 
   const [showReviews, setShowReviews] = useState(false);
   const [reviews, setReviews] = useState([]);
@@ -87,6 +89,21 @@ function AnimeDetails() {
         setRating(0);
         setReviewText("");
       }
+
+      const { data: watchlistData, error: watchlistError } = await supabase
+        .from("watchlists")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("anime_id", parseInt(id))
+        .maybeSingle();
+
+      if (watchlistError) {
+        console.error("Error fetching watchlist status:", watchlistError.message);
+      } else if (watchlistData) {
+        setInWatchlist(true);
+      } else {
+        setInWatchlist(false);
+      }
     }
 
     fetchAnimeDetails();
@@ -149,6 +166,45 @@ function AnimeDetails() {
       alert("Failed to save rating.");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function toggleWatchlist() {
+    if (!currentUser) {
+      alert("You must be logged in to add to your watchlist.");
+      return;
+    }
+
+    setWatchlistLoading(true);
+
+    try {
+      if (inWatchlist) {
+        // Remove from watchlist
+        const { error: removeError } = await supabase
+          .from("watchlists")
+          .delete()
+          .eq("user_id", currentUser.id)
+          .eq("anime_id", parseInt(id));
+
+        if (removeError) throw removeError;
+        setInWatchlist(false);
+      } else {
+        // Add to watchlist
+        const { error: insertError } = await supabase.from("watchlists").insert({
+          user_id: currentUser.id,
+          anime_id: parseInt(id),
+          title: anime.title,
+          image_url: anime.images?.jpg?.image_url || null,
+        });
+
+        if (insertError) throw insertError;
+        setInWatchlist(true);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update watchlist.");
+    } finally {
+      setWatchlistLoading(false);
     }
   }
 
@@ -234,6 +290,24 @@ function AnimeDetails() {
       <Link to="/dashboard">← Back to Dashboard</Link>
 
       <h1>{anime.title}</h1>
+
+      {currentUser ? (
+        <button 
+          onClick={toggleWatchlist} 
+          disabled={watchlistLoading}
+          style={{ marginBottom: "20px", padding: "8px 12px", cursor: "pointer", borderRadius: "8px" }}
+        >
+          {watchlistLoading 
+            ? "Updating..." 
+            : inWatchlist 
+            ? "Remove from Watchlist" 
+            : "Add to Watchlist"}
+        </button>
+      ) : (
+        <p style={{ marginBottom: "20px", fontStyle: "italic", color: "#888" }}>
+          <Link to="/signin">Log in</Link> to add this to your watchlist.
+        </p>
+      )}
 
       {anime.images?.jpg?.image_url && (
         <img
