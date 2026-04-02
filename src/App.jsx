@@ -10,6 +10,8 @@ import ForgotPassword from './components/ForgotPassword'
 import ResetPassword from './components/ResetPassword'
 import AnimeDetails from "./Pages/AnimeDetails";
 import AnimeEpisodes from './Pages/AnimeEpisodes'
+import SearchResults from './Pages/SearchResults'
+import Navbar from './components/NavBar'
 
 function App() {
   const [user, setUser] = useState(null)
@@ -38,6 +40,7 @@ function App() {
 
   return (
     <div>
+      <Navbar />
       <Routes>
         <Route path="/" element={user ? <Navigate to="/dashboard" /> : <Navigate to="/signin" />} />
         <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <Signup />} />
@@ -45,13 +48,15 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/dashboard" element={user
-              ? <Dashboard logout={() => supabase.auth.signOut()} />
-              : <Navigate to="/signin" />
-          } />
+          ? <Dashboard logout={() => supabase.auth.signOut()} />
+          : <Navigate to="/signin" />
+        } />
         <Route path="/anime/:id" element={<AnimeDetails />} />
         <Route path="/anime/:id/episodes" element={<AnimeEpisodes />} />
+        <Route path="/search" element={<SearchResults />} />
       </Routes>
     </div>
+
   )
 }
 
