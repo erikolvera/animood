@@ -136,7 +136,7 @@ const NavBar = () => {
                     </div>
                     <div className="w-10 h-10 rounded-full bg-stone-200 overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#b6353a] transition-all">
                         <img
-                            src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=100"
+                            src="https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"
                             alt="User profile"
                             className="w-full h-full object-cover"
                         />
