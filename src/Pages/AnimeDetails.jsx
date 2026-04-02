@@ -52,7 +52,7 @@ function AnimeDetails() {
         setLoading(false);
       }
     }
-    
+
     async function fetchCurrentUserAndExistingRating() {
       const {
         data: { user },
@@ -108,7 +108,7 @@ function AnimeDetails() {
 
     fetchAnimeDetails();
     fetchCurrentUserAndExistingRating();
-    
+
   }, [id]);
 
   async function submitAnimeRating() {
@@ -271,7 +271,7 @@ function AnimeDetails() {
     return (
       <div style={{ padding: "20px" }}>
         <p style={{ color: "red" }}>{error}</p>
-        <Link to="/dashboard">Back to Dashboard</Link>
+        {/* <Link to="/dashboard">Back to Dashboard</Link> */}
       </div>
     );
   }
@@ -280,28 +280,28 @@ function AnimeDetails() {
     return (
       <div style={{ padding: "20px" }}>
         <p>Anime not found.</p>
-        <Link to="/dashboard">Back to Dashboard</Link>
+        {/* <Link to="/dashboard">Back to Dashboard</Link> */}
       </div>
     );
   }
 
   return (
     <div style={{ padding: "20px" }}>
-      <Link to="/dashboard">← Back to Dashboard</Link>
+      {/* <Link to="/dashboard">← Back to Dashboard</Link> */}
 
       <h1>{anime.title}</h1>
 
       {currentUser ? (
-        <button 
-          onClick={toggleWatchlist} 
+        <button
+          onClick={toggleWatchlist}
           disabled={watchlistLoading}
           style={{ marginBottom: "20px", padding: "8px 12px", cursor: "pointer", borderRadius: "8px" }}
         >
-          {watchlistLoading 
-            ? "Updating..." 
-            : inWatchlist 
-            ? "Remove from Watchlist" 
-            : "Add to Watchlist"}
+          {watchlistLoading
+            ? "Updating..."
+            : inWatchlist
+              ? "Remove from Watchlist"
+              : "Add to Watchlist"}
         </button>
       ) : (
         <p style={{ marginBottom: "20px", fontStyle: "italic", color: "#888" }}>
@@ -371,8 +371,8 @@ function AnimeDetails() {
           {submitting
             ? "Saving..."
             : existingRatingId
-            ? "Update Rating"
-            : "Submit Rating"}
+              ? "Update Rating"
+              : "Submit Rating"}
         </button>
       </div>
 
@@ -436,7 +436,7 @@ function AnimeDetails() {
           )}
         </div>
       )}
-      
+
       <hr style={{ margin: "24px 0" }} />
 
       <h2>Episodes</h2>
