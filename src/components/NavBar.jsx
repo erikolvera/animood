@@ -65,18 +65,18 @@ const NavBar = () => {
                     >
                         Watchlist
                     </NavLink>
-                    <NavLink
-                        to="/community"
+                    {/* <NavLink
+                        to="/placeholder"
                         className={({ isActive }) => `text-sm pb-1 transition-colors ${isActive ? "font-bold text-[#b6353a] border-b-2 border-[#b6353a]" : "font-medium text-stone-600 hover:text-[#b6353a]"}`}
                     >
-                        Community
+                        Placeholder
                     </NavLink>
                     <NavLink
-                        to="/reviews"
+                        to="/placeholder"
                         className={({ isActive }) => `text-sm pb-1 transition-colors ${isActive ? "font-bold text-[#b6353a] border-b-2 border-[#b6353a]" : "font-medium text-stone-600 hover:text-[#b6353a]"}`}
                     >
-                        Reviews
-                    </NavLink>
+                        Placeholder
+                    </NavLink> */}
                 </div>
 
                 {/* Action Icons & Profile */}
