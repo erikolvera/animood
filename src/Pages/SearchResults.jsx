@@ -53,19 +53,19 @@ export default function SearchResults() {
                 <img
                   src={anime.images.jpg.image_url}
                   alt={anime.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-full object-cover text-white group-hover:scale-105 transition-transform duration-300"
                 />
               )}
             </div>
             <div>
-              <h3 className="font-bold text-stone-800 line-clamp-2 leading-tight group-hover:text-[#b6353a] transition-colors">
+              <h3 className="font-bold text-stone-800 line-clamp-2 leading-tight text-white group-hover:text-red-500 transition-colors">
                 {anime.title}
               </h3>
               <div className="flex gap-2 items-center mt-1">
                 <span className="text-xs font-medium bg-stone-100 text-stone-600 px-2 py-0.5 rounded">
                   {anime.type || 'TV'}
                 </span>
-                <span className="text-xs text-stone-500">
+                <span className="text-xs text-white">
                   ★ {anime.score || 'N/A'}
                 </span>
               </div>
