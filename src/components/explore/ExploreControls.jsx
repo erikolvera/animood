@@ -42,13 +42,25 @@ function GenreFilterBar({ selectedGenre, onGenreSelect }) {
   );
 }
 
-function ExploreControls({ selectedGenre, onGenreSelect }) {
+function RandomAnimeButton({ onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-fit px-4 py-2 rounded-lg border"
+    >
+      Surprise Me
+    </button>
+  );
+}
+
+function ExploreControls({ selectedGenre, onGenreSelect, onRandomClick }) {
   return (
     <div className="flex flex-col gap-4 mb-6">
       <GenreFilterBar
         selectedGenre={selectedGenre}
         onGenreSelect={onGenreSelect}
       />
+      <RandomAnimeButton onClick={onRandomClick} />
     </div>
   );
 }
