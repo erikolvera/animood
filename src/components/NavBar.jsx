@@ -46,9 +46,9 @@ const NavBar = () => {
         <nav className="sticky top-0 z-50 w-full bg-[#fefcf4]/80 backdrop-blur-xl border-b border-[#f5f4eb]">
             <div className="flex items-center justify-start gap-5 h-14 max-w-[1440px] mx-auto px-8">
                 <div className="flex items-center gap-2">
-                    <span className="text-xl font-bold tracking-tighter text-[#b6353a]">
+                    <Link to="/dashboard" className="text-xl font-bold tracking-tighter text-[#b6353a]">
                         AniMood
-                    </span>
+                    </Link>
                 </div>
 
                 {/* Navigation Links */}
