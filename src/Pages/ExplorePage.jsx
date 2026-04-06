@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import ExploreControls from "../components/explore/ExploreControls";
 import AnimeSection from "../components/explore/AnimeSection";
 
 function ExplorePage() {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const genre = searchParams.get("genre") || "";
@@ -55,6 +56,26 @@ function ExplorePage() {
 
     setSearchParams({ genre: String(genreId) });
   }
+  
+
+  async function handleRandomAnime() {
+    try {
+      const response = await fetch("https://api.jikan.moe/v4/random/anime");
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch a random anime.");
+      }
+
+      const data = await response.json();
+      const randomAnime = data.data;
+
+      if (randomAnime?.mal_id) {
+        navigate(`/anime/${randomAnime.mal_id}`);
+      }
+    } catch (err) {
+      alert(err.message);
+    }
+  }
 
   const genreNames = {
   "1": "Action",
@@ -89,6 +110,7 @@ function ExplorePage() {
       <ExploreControls
         selectedGenre={genre}
         onGenreSelect={handleGenreSelect}
+        onRandomClick={handleRandomAnime}
       />
 
       <ExploreStatus mode={mode} selectedGenre={genre} resultCount={animeList.length} />
