@@ -55,7 +55,7 @@ const Signup = () => {
       <form onSubmit={handleSubmit} className="max-w-md w-full m-auto">
         <h2 className="font-bold pb-2"> Sign up today!</h2>
         <p>
-          Already have an account? <Link to="/signin">Sign in!</Link>
+          Already have an account? <Link to="/signin" className="text-blue-600 hover:underline">Sign in!</Link>
         </p>
         <div className="flex flex-col py-4">
           <input
