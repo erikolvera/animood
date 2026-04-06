@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { searchAnime } from "../services/jikanApi";
+import { supabase } from '../supabaseClient';
 
 const NavBar = () => {
     const navigate = useNavigate();
@@ -33,6 +34,24 @@ const NavBar = () => {
 
         return () => clearTimeout(delay);
     }, [query]);
+
+    const [avatarUrl, setAvatarUrl] = useState(
+        "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"
+    );
+
+    useEffect(() => {
+        async function fetchAvatar() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            const { data } = await supabase
+                .from("profiles")
+                .select("avatar_url")
+                .eq("id", user.id)
+                .single();
+            if (data?.avatar_url) setAvatarUrl(data.avatar_url);
+        }
+        fetchAvatar();
+    }, []);
 
     const handleKeyDown = (e) => {
         if (e.key === 'Enter' && query.trim() !== '') {
@@ -133,13 +152,15 @@ const NavBar = () => {
                             </div>
                         )}
                     </div>
-                    <div className="w-8 h-8 rounded-full bg-stone-200 overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#b6353a] transition-all">
-                        <img
-                            src="https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"
-                            alt="User profile"
-                            className="w-full h-full object-cover"
-                        />
-                    </div>
+                    <Link to="/profile">
+                        <div className="w-8 h-8 rounded-full bg-stone-200 overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#b6353a] transition-all">
+                            <img
+                                src={avatarUrl}
+                                alt="User profile"
+                                className="w-full h-full object-cover"
+                            />
+                        </div>
+                    </Link>
                 </div>
             </div>
         </nav>

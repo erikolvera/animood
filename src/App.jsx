@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
+import ProfilePage from './Pages/ProfilePage'
 import './App.css'
 
 import Signup from './components/Signup'
@@ -54,6 +55,7 @@ function App() {
         <Route path="/anime/:id" element={<AnimeDetails />} />
         <Route path="/anime/:id/episodes" element={<AnimeEpisodes />} />
         <Route path="/search" element={<SearchResults />} />
+        <Route path="/profile" element={user ? <ProfilePage /> : <Navigate to="/signin" />} />
       </Routes>
     </div>
 
