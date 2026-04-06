@@ -12,6 +12,7 @@ import AnimeDetails from "./Pages/AnimeDetails";
 import AnimeEpisodes from './Pages/AnimeEpisodes'
 import SearchResults from './Pages/SearchResults'
 import Navbar from './components/NavBar'
+import ExplorePage from "./Pages/ExplorePage";
 
 function App() {
   const [user, setUser] = useState(null)
@@ -54,6 +55,8 @@ function App() {
         <Route path="/anime/:id" element={<AnimeDetails />} />
         <Route path="/anime/:id/episodes" element={<AnimeEpisodes />} />
         <Route path="/search" element={<SearchResults />} />
+        <Route path="/explore" element={<ExplorePage />} />
+        
       </Routes>
     </div>
 
