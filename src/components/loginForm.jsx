@@ -37,7 +37,7 @@ const LoginForm = () => {
       <form onSubmit={handleLogin} className="max-w-md w-full m-auto">
         <h2 className="font-bold pb-2">Welcome Back!</h2>
         <p>
-          Don't have an account? <Link to="/signup">Sign up instead</Link>
+          Don't have an account? <Link to="/signup" className="text-blue-600 hover:underline">Sign up instead</Link>
         </p>
         <div className="flex flex-col py-4">
           <input
