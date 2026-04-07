@@ -30,7 +30,7 @@ function ExploreControls({
                 onClick={() => onGenreToggle(genre.id)}
                 className={`px-3 py-1 rounded-full border transition ${
                   isSelected
-                    ? "border-current font-bold scale-105"
+                    ? "bg-red-500 border-red-500 font-bold"
                     : "opacity-70 hover:opacity-100"
                 }`}
               >
