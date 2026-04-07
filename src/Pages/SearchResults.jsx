@@ -31,14 +31,14 @@ export default function SearchResults() {
 
   return (
     <div className="max-w-[1440px] mx-auto px-8 py-8">
-      <h1 className="text-3xl font-bold text-stone-800 mb-6">
+      <h1 className="text-3xl font-bold 800 mb-6">
         Search Results for "{query}"
       </h1>
 
-      {loading && <p className="text-stone-500">Loading results...</p>}
+      {loading && <p className="500">Loading results...</p>}
       {error && <p className="text-red-500">{error}</p>}
       {!loading && !error && animeResults.length === 0 && query && (
-        <p className="text-stone-500">No anime found matching your search.</p>
+        <p className="500">No anime found matching your search.</p>
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
@@ -48,7 +48,7 @@ export default function SearchResults() {
             to={`/anime/${anime.mal_id}`}
             className="flex flex-col gap-2 group cursor-pointer"
           >
-            <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-stone-200">
+            <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-200">
               {anime.images?.jpg?.image_url && (
                 <img
                   src={anime.images.jpg.image_url}
@@ -58,14 +58,14 @@ export default function SearchResults() {
               )}
             </div>
             <div>
-              <h3 className="font-bold text-stone-800 line-clamp-2 leading-tight group-hover:text-[#b6353a] transition-colors">
+              <h3 className="font-bold 800 line-clamp-2 leading-tight group-hover:text-red-500 transition-colors">
                 {anime.title}
               </h3>
               <div className="flex gap-2 items-center mt-1">
-                <span className="text-xs font-medium bg-stone-100 text-stone-600 px-2 py-0.5 rounded">
+                <span className="text-xs font-medium bg-100 600 px-2 py-0.5 rounded">
                   {anime.type || 'TV'}
                 </span>
-                <span className="text-xs text-stone-500">
+                <span className="text-xs">
                   ★ {anime.score || 'N/A'}
                 </span>
               </div>
