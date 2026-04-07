@@ -84,13 +84,13 @@ const NavBar = () => {
                     >
                         Watchlist
                     </NavLink>
-                    {/* <NavLink
-                        to="/placeholder"
+                    <NavLink
+                        to="/explore"
                         className={({ isActive }) => `text-sm pb-1 transition-colors ${isActive ? "font-bold text-[#b6353a] border-b-2 border-[#b6353a]" : "font-medium text-stone-600 hover:text-[#b6353a]"}`}
                     >
-                        Placeholder
+                        Explore
                     </NavLink>
-                    <NavLink
+                    {/* <NavLink
                         to="/placeholder"
                         className={({ isActive }) => `text-sm pb-1 transition-colors ${isActive ? "font-bold text-[#b6353a] border-b-2 border-[#b6353a]" : "font-medium text-stone-600 hover:text-[#b6353a]"}`}
                     >
