@@ -28,10 +28,10 @@ function ExploreControls({
               <button
                 key={genre.id}
                 onClick={() => onGenreToggle(genre.id)}
-                className={`px-3 py-1 rounded-full border transition-colors ${
+                className={`px-3 py-1 rounded-full border transition ${
                   isSelected
-                    ? "bg-red-500 border-red-500 font-bold"
-                    : "bg-transparent border/30 hover:border hover:text"
+                    ? "border-current font-bold scale-105"
+                    : "opacity-70 hover:opacity-100"
                 }`}
               >
                 {genre.name}
@@ -43,7 +43,7 @@ function ExploreControls({
           {selectedGenres.length > 0 && (
             <button
               onClick={onClearGenres}
-              className="px-3 py-1 rounded-full border border-red-500 text-red-500 hover:bg-red-500 hover: transition-colors font-bold"
+              className="px-3 py-1 rounded-full border font-bold opacity-70 hover:opacity-100 transition"
               title="Clear all genres"
             >
               ×
@@ -54,7 +54,7 @@ function ExploreControls({
 
       <button
         onClick={onRandomClick}
-        className="w-fit px-4 py-2 rounded-lg border border/30 hover:border transition-colors"
+        className="w-fit px-4 py-2 rounded-lg border transition opacity-80 hover:opacity-100"
       >
         Surprise Me
       </button>

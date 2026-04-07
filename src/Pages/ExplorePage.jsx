@@ -125,7 +125,7 @@ function ExplorePage() {
 
       <div className="mb-6">
         <h1 className="text-3xl font-bold">{text}</h1>
-        <p className="/70 mt-1">
+        <p className="text-sm opacity-70 mt-1">
           {animeList.length} result{animeList.length === 1 ? "" : "s"}
         </p>
       </div>
