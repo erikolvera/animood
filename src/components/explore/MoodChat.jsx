@@ -16,15 +16,15 @@ export default function MoodBot() {
 
     return (
         <div>
-            <button 
-            onClick={() => setOpen(true)}
-            className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 p-[2px]">
+            <button
+                onClick={() => setOpen(true)}
+                className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 p-[2px]">
                 <div className="flex h-full w-full items-center justify-center rounded-full bg-[#fefcf4] px-2 py-0.5 text-sm text-black">
                     MoodBot
                 </div>
             </button>
 
-            <Dialog open={open} onClose={setOpen} className="relative z-10">
+            <Dialog open={open} onClose={setOpen} className="fixed inset-0 z-50">
                 <DialogBackdrop
                     transition
                     className="inset-0 bg-gray-900/50 transition-opacity duration-500 ease-in-out data-closed:opacity-0"
