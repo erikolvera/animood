@@ -13,6 +13,7 @@ import AnimeEpisodes from './Pages/AnimeEpisodes'
 import SearchResults from './Pages/SearchResults'
 import Navbar from './components/NavBar'
 import ExplorePage from "./Pages/ExplorePage";
+import WatchList from './Pages/WatchList'
 
 function App() {
   const [user, setUser] = useState(null)
@@ -56,6 +57,8 @@ function App() {
         <Route path="/anime/:id/episodes" element={<AnimeEpisodes />} />
         <Route path="/search" element={<SearchResults />} />
         <Route path="/explore" element={<ExplorePage />} />
+        <Route path="/watchlist" element={<WatchList />} />
+
         
       </Routes>
     </div>

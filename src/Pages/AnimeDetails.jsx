@@ -169,44 +169,63 @@ function AnimeDetails() {
     }
   }
 
-  async function toggleWatchlist() {
-    if (!currentUser) {
-      alert("You must be logged in to add to your watchlist.");
-      return;
-    }
-
-    setWatchlistLoading(true);
-
-    try {
-      if (inWatchlist) {
-        // Remove from watchlist
-        const { error: removeError } = await supabase
-          .from("watchlists")
-          .delete()
-          .eq("user_id", currentUser.id)
-          .eq("anime_id", parseInt(id));
-
-        if (removeError) throw removeError;
-        setInWatchlist(false);
-      } else {
-        // Add to watchlist
-        const { error: insertError } = await supabase.from("watchlists").insert({
-          user_id: currentUser.id,
-          anime_id: parseInt(id),
-          title: anime.title,
-          image_url: anime.images?.jpg?.image_url || null,
-        });
-
-        if (insertError) throw insertError;
-        setInWatchlist(true);
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Failed to update watchlist.");
-    } finally {
-      setWatchlistLoading(false);
-    }
+async function toggleWatchlist() {
+  if (!currentUser) {
+    alert("You must be logged in to add to your watchlist.");
+    return;
   }
+
+  if (!anime) {
+    alert("Anime data is still loading.");
+    return;
+  }
+
+  const animeId = Number(id);
+  if (!Number.isInteger(animeId)) {
+    alert("Invalid anime ID.");
+    return;
+  }
+
+  setWatchlistLoading(true);
+
+  try {
+    if (inWatchlist) {
+      const { error } = await supabase
+        .from("watchlists")
+        .delete()
+        .eq("user_id", currentUser.id)
+        .eq("anime_id", animeId);
+
+      if (error) throw error;
+      setInWatchlist(false);
+    } else {
+      const { error } = await supabase
+        .from("watchlists")
+        .insert([
+          {
+            user_id: currentUser.id,
+            anime_id: animeId,
+            title: anime.title ?? null,
+            image_url: anime.images?.jpg?.image_url ?? null,
+          },
+        ]);
+
+      if (error) throw error;
+      setInWatchlist(true);
+    }
+  } catch (err) {
+    console.error("Watchlist error:", {
+      message: err.message,
+      details: err.details,
+      hint: err.hint,
+      code: err.code,
+      full: err,
+    });
+    alert(err.message || "Failed to update watchlist.");
+  } finally {
+    setWatchlistLoading(false);
+  }
+}
 
   async function loadReviews(pageToLoad = 0, replace = false) {
     try {
