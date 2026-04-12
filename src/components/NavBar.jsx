@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { searchAnime } from "../services/jikanApi";
 import { supabase } from '../supabaseClient';
-// import MoodChat from './explore/MoodChat';
-import MoodBot from './explore/MoodChat';
+// import MoodBot from './explore/MoodBot';
+import MoodBot from './explore/MoodBot';
 
 const NavBar = () => {
     const navigate = useNavigate();
