@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
+import ProfilePage from './Pages/ProfilePage'
 import './App.css'
 
 import Signup from './components/Signup'
@@ -58,8 +59,7 @@ function App() {
         <Route path="/search" element={<SearchResults />} />
         <Route path="/explore" element={<ExplorePage />} />
         <Route path="/watchlist" element={<WatchList />} />
-
-        
+        <Route path="/profile" element={user ? <ProfilePage /> : <Navigate to="/signin" />} />
       </Routes>
     </div>
 

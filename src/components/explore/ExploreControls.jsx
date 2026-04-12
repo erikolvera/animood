@@ -11,56 +11,53 @@ const genres = [
   { id: 37, name: "Supernatural" },
 ];
 
-function GenreFilterBar({ selectedGenre, onGenreSelect }) {
-  return (
-    <div>
-      <h2 className="text-xl font-bold text-stone-800 mb-3">Browse by Genre</h2>
-
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={() => onGenreSelect("")}
-          className={`px-3 py-1 rounded-full border ${
-            selectedGenre === "" ? "font-bold" : ""
-          }`}
-        >
-          All
-        </button>
-
-        {genres.map((genre) => (
-          <button
-            key={genre.id}
-            onClick={() => onGenreSelect(genre.id)}
-            className={`px-3 py-1 rounded-full border ${
-              String(selectedGenre) === String(genre.id) ? "font-bold" : ""
-            }`}
-          >
-            {genre.name}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function RandomAnimeButton({ onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      className="w-fit px-4 py-2 rounded-lg border"
-    >
-      Surprise Me
-    </button>
-  );
-}
-
-function ExploreControls({ selectedGenre, onGenreSelect, onRandomClick }) {
+function ExploreControls({
+  selectedGenres,
+  onGenreToggle,
+  onClearGenres,
+  onRandomClick,
+}) {
   return (
     <div className="flex flex-col gap-4 mb-6">
-      <GenreFilterBar
-        selectedGenre={selectedGenre}
-        onGenreSelect={onGenreSelect}
-      />
-      <RandomAnimeButton onClick={onRandomClick} />
+      <div>
+        <div className="flex flex-wrap gap-2">
+          {genres.map((genre) => {
+            const isSelected = selectedGenres.includes(String(genre.id));
+
+            return (
+              <button
+                key={genre.id}
+                onClick={() => onGenreToggle(genre.id)}
+                className={`px-3 py-1 rounded-full border transition ${
+                  isSelected
+                    ? "bg-red-500 border-red-500 font-bold"
+                    : "opacity-70 hover:opacity-100"
+                }`}
+              >
+                {genre.name}
+              </button>
+            );
+          })}
+
+          {/* Clear "X" button */}
+          {selectedGenres.length > 0 && (
+            <button
+              onClick={onClearGenres}
+              className="px-3 py-1 rounded-full border font-bold opacity-70 hover:opacity-100 transition"
+              title="Clear all genres"
+            >
+              ×
+            </button>
+          )}
+        </div>
+      </div>
+
+      <button
+        onClick={onRandomClick}
+        className="w-fit px-4 py-2 rounded-lg border transition opacity-80 hover:opacity-100"
+      >
+        Surprise Me
+      </button>
     </div>
   );
 }

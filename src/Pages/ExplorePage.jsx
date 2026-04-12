@@ -3,11 +3,27 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import ExploreControls from "../components/explore/ExploreControls";
 import AnimeSection from "../components/explore/AnimeSection";
 
+const genreNames = {
+  "1": "Action",
+  "2": "Adventure",
+  "4": "Comedy",
+  "8": "Drama",
+  "10": "Fantasy",
+  "14": "Horror",
+  "22": "Romance",
+  "24": "Sci-Fi",
+  "36": "Slice of Life",
+  "37": "Supernatural",
+};
+
 function ExplorePage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const genre = searchParams.get("genre") || "";
+  const genresParam = searchParams.get("genres") || "";
+  const selectedGenres = genresParam
+    ? genresParam.split(",").filter(Boolean)
+    : [];
 
   const [animeList, setAnimeList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,8 +38,8 @@ function ExplorePage() {
 
         let url = "https://api.jikan.moe/v4/top/anime";
 
-        if (genre) {
-          url = `https://api.jikan.moe/v4/anime?genres=${genre}&order_by=score&sort=desc`;
+        if (selectedGenres.length > 0) {
+          url = `https://api.jikan.moe/v4/anime?genres=${selectedGenres.join(",")}&order_by=score&sort=desc`;
           setMode("genre");
         } else {
           setMode("default");
@@ -46,17 +62,29 @@ function ExplorePage() {
     }
 
     fetchExploreAnime();
-  }, [genre]);
+  }, [selectedGenres.join(",")]);
 
-  function handleGenreSelect(genreId) {
-    if (!genreId) {
-      setSearchParams({});
-      return;
+  function handleGenreToggle(genreId) {
+    const genreIdString = String(genreId);
+
+    let updatedGenres;
+
+    if (selectedGenres.includes(genreIdString)) {
+      updatedGenres = selectedGenres.filter((id) => id !== genreIdString);
+    } else {
+      updatedGenres = [...selectedGenres, genreIdString];
     }
 
-    setSearchParams({ genre: String(genreId) });
+    if (updatedGenres.length === 0) {
+      setSearchParams({});
+    } else {
+      setSearchParams({ genres: updatedGenres.join(",") });
+    }
   }
-  
+
+  function handleClearGenres() {
+    setSearchParams({});
+  }
 
   async function handleRandomAnime() {
     try {
@@ -77,43 +105,30 @@ function ExplorePage() {
     }
   }
 
-  const genreNames = {
-  "1": "Action",
-  "2": "Adventure",
-  "4": "Comedy",
-  "8": "Drama",
-  "10": "Fantasy",
-  "14": "Horror",
-  "22": "Romance",
-  "24": "Sci-Fi",
-  "36": "Slice of Life",
-  "37": "Supernatural",
-  };
+  let text = "Trending anime";
 
-  function ExploreStatus({ mode, selectedGenre, resultCount }) {
-    let text = "Trending anime";
-
-    if (mode === "genre" && selectedGenre) {
-      text = `Browsing genre: ${genreNames[selectedGenre] || "Unknown Genre"}`;
-    }
-
-    return (
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-stone-800">{text}</h1>
-        <p className="text-stone-500 mt-1">{resultCount} result(s)</p>
-      </div>
+  if (mode === "genre" && selectedGenres.length > 0) {
+    const selectedGenreNames = selectedGenres.map(
+      (id) => genreNames[id] || "Unknown Genre"
     );
+    text = `Browsing genres: ${selectedGenreNames.join(", ")}`;
   }
 
   return (
     <div className="max-w-[1440px] mx-auto px-8 py-8">
       <ExploreControls
-        selectedGenre={genre}
-        onGenreSelect={handleGenreSelect}
+        selectedGenres={selectedGenres}
+        onGenreToggle={handleGenreToggle}
+        onClearGenres={handleClearGenres}
         onRandomClick={handleRandomAnime}
       />
 
-      <ExploreStatus mode={mode} selectedGenre={genre} resultCount={animeList.length} />
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold">{text}</h1>
+        <p className="text-sm opacity-70 mt-1">
+          {animeList.length} result{animeList.length === 1 ? "" : "s"}
+        </p>
+      </div>
 
       <AnimeSection
         loading={loading}
