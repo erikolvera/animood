@@ -2,7 +2,7 @@ import AnimeGrid from "../anime/AnimeGrid";
 
 function AnimeSection({ loading, error, animeList }) {
   if (loading) {
-    return <p className="text-stone-500">Loading anime...</p>;
+    return <p className="text-white-500">Loading anime...</p>;
   }
 
   if (error) {
@@ -10,7 +10,7 @@ function AnimeSection({ loading, error, animeList }) {
   }
 
   if (animeList.length === 0) {
-    return <p className="text-stone-500">No anime found.</p>;
+    return <p className="text-white-500">No anime found.</p>;
   }
 
   return <AnimeGrid animeList={animeList} />;

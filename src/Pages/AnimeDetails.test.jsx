@@ -80,6 +80,17 @@ describe("AnimeDetails", () => {
           })),
         };
       }
+      if (table === "watchlists") {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null })
+              }))
+            }))
+          }))
+        };
+      }
     });
 
     renderAnimeDetails();
@@ -118,6 +129,17 @@ describe("AnimeDetails", () => {
           select: vi.fn(() => ({
             eq: eqFirst,
           })),
+        };
+      }
+      if (table === "watchlists") {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null })
+              }))
+            }))
+          }))
         };
       }
     });
@@ -170,6 +192,17 @@ describe("AnimeDetails", () => {
             eq: eqFirst,
           })),
           upsert,
+        };
+      }
+      if (table === "watchlists") {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null })
+              }))
+            }))
+          }))
         };
       }
     });
@@ -251,6 +284,17 @@ describe("AnimeDetails", () => {
             eq: eqFirst,
           })),
           upsert,
+        };
+      }
+      if (table === "watchlists") {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null })
+              }))
+            }))
+          }))
         };
       }
     });
@@ -336,6 +380,17 @@ describe("AnimeDetails", () => {
               eq: eqForReviews,
             };
           }),
+        };
+      }
+      if (table === "watchlists") {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null })
+              }))
+            }))
+          }))
         };
       }
     });
