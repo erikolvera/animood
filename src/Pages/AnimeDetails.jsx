@@ -456,6 +456,22 @@ function AnimeDetails() {
       >
         View Episodes
       </Link>
+
+      <Link
+        to={`/anime/${id}/discussions`}
+        style={{
+          display: "inline-block",
+          padding: "10px 16px",
+          border: "1px solid #ccc",
+          borderRadius: "8px",
+          textDecoration: "none",
+          color: "inherit",
+          marginTop: "8px",
+          marginRight: "8px",
+        }}
+      >
+        Discussion
+      </Link>
     </div>
   );
 }
