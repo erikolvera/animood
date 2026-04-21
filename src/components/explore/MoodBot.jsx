@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle, TransitionChild } from '@headlessui/react'
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { getGenresFromMood } from "../../services/aiService";
+
 // import ExploreControls from "./ExploreControls";
 // import AnimeSection from "./AnimeSection";
 
@@ -13,6 +15,55 @@ export default function MoodBot() {
     const [messages, setMessages] = useState([
         { role: "assistant", content: "Hi! I'm MoodBot. Tell me what kind of mood you're in and I'll recommend some anime!" }
     ])
+
+    const messagesEndRef = useRef(null)
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    }, [messages, isThinking])
+
+    const handleChatSubmit = async (e) => {
+        e.preventDefault();
+        if (!query.trim()) return;
+
+        const userText = query;
+        setQuery("");
+
+        setMessages(prev => [...prev, { role: 'user', content: userText }]);
+        setIsThinking(true);
+
+        try {
+            // Grab the payload
+            const aiPayload = await getGenresFromMood(userText);
+            console.log("AI returned:", aiPayload);
+
+            // Build the API URL using ONLY the primary genre
+            const primaryGenre = aiPayload.genres[0];
+            const randomPage = Math.floor(Math.random() * 20) + 1;
+
+            const response = await fetch(`https://api.jikan.moe/v4/anime?genres=${primaryGenre}&page=${randomPage}&limit=3&order_by=score&sort=desc`);
+            const data = await response.json();
+
+            // Map over the anime objects to extract just the english or default titles
+            const titles = data.data.map(anime => anime.title_english || anime.title);
+
+            // Fallback in case Jikan doesn't find anything
+            if (titles.length === 0) {
+                setMessages(prev => [...prev, { role: 'assistant', content: `${aiPayload.friendly_message}\n\nHmm, I tried to find some anime for that mood but couldn't find any exact matches. Try exploring the main page!` }]);
+                return;
+            }
+
+            // Combine the AI's natural message with your hardcoded list
+            const botResponse = `${aiPayload.friendly_message}\n\nHere are some recommendations to get you started:\n- ${titles.join('\n- ')}`;
+
+            // Push to chat
+            setMessages(prev => [...prev, { role: 'assistant', content: botResponse }]);
+        } catch (error) {
+            setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I'm having trouble understanding you. Try rephrasing your request." }]);
+        } finally {
+            setIsThinking(false);
+        }
+    }
 
     return (
         <div>
@@ -29,32 +80,68 @@ export default function MoodBot() {
                     transition
                     className="inset-0 bg-gray-900/50 transition-opacity duration-500 ease-in-out data-closed:opacity-0"
                 />
-
                 <div className="fixed inset-0 overflow-hidden">
                     <div className="absolute inset-0 overflow-hidden">
                         <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10 sm:pl-16">
                             <DialogPanel
                                 transition
-                                className="pointer-events-auto relative w-screen max-w-md transform transition duration-500 ease-in-out data-closed:translate-x-full sm:duration-700"
+                                className="pointer-events-auto relative w-screen max-w-sm transform transition duration-500 ease-in-out data-closed:translate-x-full sm:duration-700"
                             >
-                                <TransitionChild>
-                                    <div className="absolute top-0 left-0 -ml-8 flex pt-4 pr-2 duration-500 ease-in-out data-closed:opacity-0 sm:-ml-10 sm:pr-4">
+                                <div className="relative flex h-full flex-col bg-slate-900 py-4 shadow-xl">
+                                    <div className="px-4 border-b border-slate-700/50 pb-3 flex items-center gap-3">
                                         <button
                                             type="button"
                                             onClick={() => setOpen(false)}
-                                            className="relative rounded-md text-gray-400 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+                                            className="rounded-md text-slate-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                                         >
-                                            <span className="absolute -inset-2.5" />
                                             <span className="sr-only">Close panel</span>
-                                            <XMarkIcon aria-hidden="true" className="size-6" />
+                                            <XMarkIcon aria-hidden="true" className="size-6 transition-colors" />
                                         </button>
+                                        <DialogTitle className="text-xl font-semibold text-indigo-400 relative top-[1px]">MoodBot</DialogTitle>
                                     </div>
-                                </TransitionChild>
-                                <div className="relative flex h-full flex-col overflow-y-auto bg-gray-800 py-6 shadow-xl after:absolute after:inset-y-0 after:left-0 after:w-px after:bg-white/10">
-                                    <div className="px-4 sm:px-6">
-                                        <DialogTitle className="text-base font-semibold text-white">Panel title</DialogTitle>
+                                    {/* chatbot ui */}
+                                    <div className="relative flex flex-1 flex-col overflow-hidden px-4 pt-4">
+                                        <div className="flex-1 overflow-y-auto pr-2">
+                                            {messages.map((msg, index) => (
+                                                <div key={index} className={`mb-4 flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                                    <span className={`inline-block rounded-2xl px-3 py-1.5 max-w-[80%] whitespace-pre-wrap ${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-slate-800 text-slate-200 rounded-bl-none'}`}>
+                                                        {msg.content}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                            {isThinking && (
+                                                <div className="mb-4 flex justify-start">
+                                                    <div className="inline-flex rounded-2xl px-4 py-3 bg-slate-800 rounded-bl-none items-center space-x-1.5 animate-pulse">
+                                                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                                                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                                                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <div ref={messagesEndRef} />
+                                        </div>
+
+                                        <div className="mt-4 pt-2">
+                                            <form
+                                                onSubmit={handleChatSubmit}
+                                                className="flex gap-2"
+                                            >
+                                                <input
+                                                    type="text"
+                                                    value={query}
+                                                    onChange={(e) => setQuery(e.target.value)}
+                                                    placeholder="Type your mood..."
+                                                    className="flex-1 rounded-full bg-slate-800 border border-slate-700 px-4 py-1.5 text-white shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all placeholder:text-slate-400"
+                                                />
+                                                <button
+                                                    type="submit"
+                                                    className="rounded-full bg-indigo-600 hover:bg-indigo-500 px-3 py-1 text-white font-medium shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+                                                >
+                                                    Send
+                                                </button>
+                                            </form>
+                                        </div>
                                     </div>
-                                    <div className="relative mt-6 flex-1 px-4 sm:px-6">{/* Your content */}</div>
                                 </div>
                             </DialogPanel>
                         </div>
