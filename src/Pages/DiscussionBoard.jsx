@@ -53,7 +53,14 @@ export default function DiscussionBoard() {
   }, [posts, isGlobal]);
 
   async function handleCreatePost(title, body) {
-    const { error: insertError } = await supabase
+    console.log("Attempting insert with:", {
+      user_id: currentUser?.id,
+      anime_id: isGlobal ? null : parseInt(id),
+      title: title.trim(),
+      body: body.trim(),
+    });
+
+    const { data: insertData, error: insertError } = await supabase
       .from("discussion_posts")
       .insert({
         user_id: currentUser.id,
@@ -62,12 +69,16 @@ export default function DiscussionBoard() {
         body: body.trim(),
       });
 
+    console.log("Insert result:", insertData, insertError);
+
     if (insertError) {
       console.error("Insert error:", insertError.message);
+      alert("Failed to post: " + insertError.message);
       return;
     }
 
-    // Reload all posts fresh from the database
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
     let query = supabase
       .from("discussion_posts")
       .select("*, profiles(username)")
@@ -79,8 +90,11 @@ export default function DiscussionBoard() {
 
     const { data, error: fetchError } = await query;
 
+    console.log("Fetch result:", data, fetchError);
+
     if (fetchError) {
       console.error("Fetch error:", fetchError.message);
+      alert("Failed to fetch posts: " + fetchError.message);
       return;
     }
 
