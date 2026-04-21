@@ -456,6 +456,18 @@ function AnimeDetails() {
       >
         View Episodes
       </Link>
+
+      <hr style={{ margin: "24px 0" }} />
+
+      {/* Discussion Section */}
+      <h2>Community Discussion</h2>
+      <p>Share your thoughts and discuss this anime with other fans.</p>
+      <Link
+        to={`/anime/${id}/discussions`}
+        className="inline-block mt-2 px-5 py-2.5 rounded-full bg-[#b6353a] text-white text-sm font-medium hover:bg-[#9e2d31] transition-colors"
+      >
+        Go to Discussion Board
+      </Link>
     </div>
   );
 }
