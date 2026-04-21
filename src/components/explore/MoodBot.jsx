@@ -39,6 +39,7 @@ export default function MoodBot() {
 
             // Build the API URL using ONLY the primary genre
             const primaryGenre = aiPayload.genres[0];
+            // Give the illusion of infinite anime by randomizing the page
             const randomPage = Math.floor(Math.random() * 20) + 1;
 
             const response = await fetch(`https://api.jikan.moe/v4/anime?genres=${primaryGenre}&page=${randomPage}&limit=3&order_by=score&sort=desc`);
@@ -53,7 +54,7 @@ export default function MoodBot() {
                 return;
             }
 
-            // Combine the AI's natural message with your hardcoded list
+            // Combine the AI's natural message with the anime titles
             const botResponse = `${aiPayload.friendly_message}\n\nHere are some recommendations to get you started:\n- ${titles.join('\n- ')}`;
 
             // Push to chat
@@ -87,34 +88,34 @@ export default function MoodBot() {
                                 transition
                                 className="pointer-events-auto relative w-screen max-w-sm transform transition duration-500 ease-in-out data-closed:translate-x-full sm:duration-700"
                             >
-                                <div className="relative flex h-full flex-col bg-slate-900 py-4 shadow-xl">
-                                    <div className="px-4 border-b border-slate-700/50 pb-3 flex items-center gap-3">
+                                <div className="relative flex h-full flex-col bg-slate-950 py-4 shadow-xl">
+                                    <div className="px-4 border-b border-slate-800 pb-3 flex items-center gap-3">
                                         <button
                                             type="button"
                                             onClick={() => setOpen(false)}
-                                            className="rounded-md text-slate-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                                            className="rounded-md text-slate-400 hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500"
                                         >
                                             <span className="sr-only">Close panel</span>
                                             <XMarkIcon aria-hidden="true" className="size-6 transition-colors" />
                                         </button>
-                                        <DialogTitle className="text-xl font-semibold text-indigo-400 relative top-[1px]">MoodBot</DialogTitle>
+                                        <DialogTitle className="text-xl font-bold text-white relative top-[1px]">MoodBot</DialogTitle>
                                     </div>
                                     {/* chatbot ui */}
                                     <div className="relative flex flex-1 flex-col overflow-hidden px-4 pt-4">
                                         <div className="flex-1 overflow-y-auto pr-2">
                                             {messages.map((msg, index) => (
                                                 <div key={index} className={`mb-4 flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                                    <span className={`inline-block rounded-2xl px-3 py-1.5 max-w-[80%] whitespace-pre-wrap ${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-slate-800 text-slate-200 rounded-bl-none'}`}>
+                                                    <span className={`inline-block rounded-2xl px-3 py-1.5 max-w-[80%] whitespace-pre-wrap shadow-sm ${msg.role === 'user' ? 'bg-purple-600 text-white rounded-br-none' : 'bg-slate-800 text-slate-100 border border-slate-700 rounded-bl-none'}`}>
                                                         {msg.content}
                                                     </span>
                                                 </div>
                                             ))}
                                             {isThinking && (
                                                 <div className="mb-4 flex justify-start">
-                                                    <div className="inline-flex rounded-2xl px-4 py-3 bg-slate-800 rounded-bl-none items-center space-x-1.5 animate-pulse">
-                                                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                                                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                                                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                                                    <div className="inline-flex rounded-2xl px-4 py-3 bg-slate-800 border border-slate-700 rounded-bl-none items-center space-x-1.5 animate-pulse shadow-sm">
+                                                        <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
+                                                        <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
+                                                        <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
                                                     </div>
                                                 </div>
                                             )}
@@ -131,11 +132,11 @@ export default function MoodBot() {
                                                     value={query}
                                                     onChange={(e) => setQuery(e.target.value)}
                                                     placeholder="Type your mood..."
-                                                    className="flex-1 rounded-full bg-slate-800 border border-slate-700 px-4 py-1.5 text-white shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all placeholder:text-slate-400"
+                                                    className="flex-1 rounded-full bg-slate-900 border border-slate-700 px-4 py-1.5 text-purple-100 shadow-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500/50 transition-all placeholder:text-slate-500"
                                                 />
                                                 <button
                                                     type="submit"
-                                                    className="rounded-full bg-indigo-600 hover:bg-indigo-500 px-3 py-1 text-white font-medium shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+                                                    className="rounded-full bg-purple-600 hover:bg-purple-500 px-4 py-1.5 text-white font-medium shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 focus:ring-offset-slate-950"
                                                 >
                                                     Send
                                                 </button>
