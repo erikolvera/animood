@@ -10,16 +10,27 @@ export async function getRecommendations(userId) {
 
   const inputs = await getRecommendationInputs(userId);
   const excludedIds = buildExcludedIds(inputs);
+  const candidates = await loadCandidatePool(excludedIds, 300);
+
+  if (!inputs.hasEnoughData) {
+    return {
+      recommendations: candidates.slice(0, 20).map((anime) => ({
+        ...anime,
+        explanation: [
+          "Popular anime while we learn your preferences.",
+        ],
+      })),
+      hasEnoughData: false,
+      mode: "fallback",
+    };
+  }
+
+  const scoredCandidates = scoreCandidates(candidates, inputs);
 
   return {
-    recommendations: [],
-    hasEnoughData: inputs.totalSignals >= MINIMUM_SIGNALS,
-    mode: inputs.totalSignals >= MINIMUM_SIGNALS ? "personalized" : "fallback",
-    debug: {
-      totalSignals: inputs.totalSignals,
-      excludedCount: excludedIds.size,
-      counts: inputs.counts,
-    },
+    recommendations: scoredCandidates.slice(0, 20),
+    hasEnoughData: true,
+    mode: "personalized",
   };
 }
 
@@ -78,15 +89,20 @@ export async function getRecommendationInputs(userId) {
 
   const likedOnboardingIds = onboardingResponses
     .filter((item) => item.response === "like")
-    .map((item) => item.mal_id);
+    .map((item) => Number(item.mal_id));
 
   const dislikedOnboardingIds = onboardingResponses
     .filter((item) => item.response === "dislike")
-    .map((item) => item.mal_id);
+    .map((item) => Number(item.mal_id));
 
   const unsureOnboardingIds = onboardingResponses
     .filter((item) => item.response === "unsure")
-    .map((item) => item.mal_id);
+    .map((item) => Number(item.mal_id));
+
+  const [likedOnboardingAnime, dislikedOnboardingAnime] = await Promise.all([
+    fetchAnimeCacheByIds(likedOnboardingIds),
+    fetchAnimeCacheByIds(dislikedOnboardingIds),
+  ]);
 
   return {
     userId,
@@ -105,6 +121,8 @@ export async function getRecommendationInputs(userId) {
     likedOnboardingIds,
     dislikedOnboardingIds,
     unsureOnboardingIds,
+    likedOnboardingAnime,
+    dislikedOnboardingAnime,
 
     counts: {
       profileFavorites: signalSummary.profileFavorites?.length || 0,
@@ -186,4 +204,206 @@ export async function loadCandidatePool(excludedIds, limit = 300) {
   });
 
   return filtered.slice(0, limit);
+}
+
+export function scoreCandidates(candidates, inputs) {
+  const favoriteGenreCounts = buildGenreFrequencyMap(inputs.profileFavorites || []);
+  const likedSeedGenreCounts = buildGenreFrequencyMap(inputs.likedOnboardingAnime || []);
+  const dislikedSeedGenreCounts = buildGenreFrequencyMap(inputs.dislikedOnboardingAnime || []);
+
+  return candidates
+    .map((anime) => {
+      const recommendationScore = scoreCandidate(
+        anime,
+        inputs,
+        favoriteGenreCounts,
+        likedSeedGenreCounts,
+        dislikedSeedGenreCounts
+      );
+
+      const explanation = buildExplanation(
+        anime,
+        inputs,
+        favoriteGenreCounts,
+        likedSeedGenreCounts
+      );
+
+      return {
+        ...anime,
+        recommendationScore,
+        explanation,
+      };
+    })
+    .sort((a, b) => b.recommendationScore - a.recommendationScore);
+}
+
+function scoreCandidate(
+  anime,
+  inputs,
+  favoriteGenreCounts,
+  likedSeedGenreCounts,
+  dislikedSeedGenreCounts
+) {
+  let score = 0;
+  const candidateGenres = getGenreNames(anime);
+
+  for (const genre of candidateGenres) {
+    if (favoriteGenreCounts[genre]) {
+      score += favoriteGenreCounts[genre] * 4;
+    }
+
+    if (likedSeedGenreCounts[genre]) {
+      score += likedSeedGenreCounts[genre] * 3;
+    }
+
+    if (dislikedSeedGenreCounts[genre]) {
+      score -= dislikedSeedGenreCounts[genre] * 4;
+    }
+
+    if ((inputs.likedGenres || []).includes(genre)) {
+      score += 3;
+    }
+
+    if ((inputs.dislikedGenres || []).includes(genre)) {
+      score -= 5;
+    }
+  }
+
+  if (anime.score != null) {
+    score += Number(anime.score) * 0.2;
+  }
+
+  if (anime.members != null && Number(anime.members) > 0) {
+    score += Math.min(Math.log10(Number(anime.members)), 6) * 0.75;
+  }
+
+  if (anime.popularity != null && Number(anime.popularity) > 0) {
+    score += Math.max(0, 3 - Math.log10(Number(anime.popularity)));
+  }
+
+  return score;
+}
+
+function buildExplanation(
+  anime,
+  inputs,
+  favoriteGenreCounts,
+  likedSeedGenreCounts
+) {
+  const explanation = [];
+  const candidateGenres = getGenreNames(anime);
+
+  const matchingFavoriteGenres = candidateGenres.filter(
+    (genre) => favoriteGenreCounts[genre]
+  );
+
+  const matchingLikedSeedGenres = candidateGenres.filter(
+    (genre) => likedSeedGenreCounts[genre]
+  );
+
+  const matchingLikedGenres = candidateGenres.filter((genre) =>
+    (inputs.likedGenres || []).includes(genre)
+  );
+
+  if (matchingFavoriteGenres.length > 0) {
+    explanation.push(
+      `Matches genres from your favorites: ${matchingFavoriteGenres
+        .slice(0, 3)
+        .join(", ")}.`
+    );
+  }
+
+  if (matchingLikedSeedGenres.length > 0) {
+    explanation.push(
+      `Similar to anime you reacted positively to through: ${matchingLikedSeedGenres
+        .slice(0, 3)
+        .join(", ")}.`
+    );
+  }
+
+  if (matchingLikedGenres.length > 0) {
+    explanation.push(
+      `Includes genres you said you like: ${matchingLikedGenres
+        .slice(0, 3)
+        .join(", ")}.`
+    );
+  }
+
+  if (explanation.length < 2 && anime.score != null && Number(anime.score) >= 8) {
+    explanation.push(`Highly rated with a score of ${anime.score}.`);
+  }
+
+  if (
+    explanation.length < 2 &&
+    anime.members != null &&
+    Number(anime.members) >= 100000
+  ) {
+    explanation.push("Popular with a large audience on MyAnimeList.");
+  }
+
+  if (explanation.length === 0) {
+    explanation.push("Recommended based on your saved preferences.");
+  }
+
+  return explanation.slice(0, 3);
+}
+
+async function fetchAnimeCacheByIds(ids) {
+  const normalizedIds = [...new Set((ids || []).map(Number).filter(Boolean))];
+
+  if (!normalizedIds.length) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("anime_cache")
+    .select(`
+      mal_id,
+      title,
+      title_english,
+      synopsis,
+      image_url,
+      type,
+      episodes,
+      score,
+      popularity,
+      members,
+      year,
+      season,
+      genres,
+      themes,
+      demographics,
+      studios
+    `)
+    .in("mal_id", normalizedIds);
+
+  if (error) {
+    throw error;
+  }
+
+  return data || [];
+}
+
+function getGenreNames(anime) {
+  if (!Array.isArray(anime?.genres)) return [];
+
+  return anime.genres
+    .map((genre) => {
+      if (typeof genre === "string") return genre;
+      if (genre && typeof genre.name === "string") return genre.name;
+      return null;
+    })
+    .filter(Boolean);
+}
+
+function buildGenreFrequencyMap(animeList) {
+  const counts = {};
+
+  for (const anime of animeList) {
+    for (const genre of getGenreNames(anime)) {
+      counts[genre] = (counts[genre] || 0) + 1;
+    }
+  }
+
+  return counts;
 }
