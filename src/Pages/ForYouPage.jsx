@@ -1,31 +1,35 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../supabaseClient";
+import { getRecommendations } from "../services/recommendationService";
+import { Link } from "react-router-dom";
 import OnboardingIntro from "../components/foryou/OnboardingIntro";
 import GenrePreferenceStep from "../components/foryou/GenrePreferenceStep";
 import ReactionCard from "../components/foryou/ReactionCard";
 import {
   getForYouSignalSummary,
   saveGenrePreferences,
-  getOnboardingCandidates,
   saveOnboardingResponse,
+  getOnboardingCandidates,
   resetOnboardingData,
 } from "../services/onboardingService";
 
 function ForYouPage() {
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+
+  const [recommendations, setRecommendations] = useState([]);
+  const [hasEnoughData, setHasEnoughData] = useState(true);
+  const [mode, setMode] = useState("traditional");
+
+  const [savingGenres, setSavingGenres] = useState(false);
+
+  const [expandedWhy, setExpandedWhy] = useState({});
 
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState("intro");
-
-  const [savingGenres, setSavingGenres] = useState(false);
-  const [loadingReactions, setLoadingReactions] = useState(false);
-  const [savingReactionId, setSavingReactionId] = useState(null);
-  const [resettingOnboarding, setResettingOnboarding] = useState(false);
-
   const [signalSummary, setSignalSummary] = useState({
     totalSignals: 0,
-    hasEnoughData: false,
     minimumSignals: 20,
     profileFavorites: [],
     counts: {
@@ -38,12 +42,20 @@ function ForYouPage() {
   });
 
   const [reactionCandidates, setReactionCandidates] = useState([]);
+  const [loadingReactions, setLoadingReactions] = useState(false);
+  const [savingReactionId, setSavingReactionId] = useState(null);
+  const [resettingOnboarding, setResettingOnboarding] = useState(false);
 
-  const loadRecommendations = useCallback(async () => {
-    try {
+  const loadRecommendations = useCallback(async (isRefresh = false) => {
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
       setLoading(true);
-      setError("");
+    }
 
+    setError("");
+
+    try {
       const {
         data: { user },
         error: userError,
@@ -55,14 +67,30 @@ function ForYouPage() {
 
       const summary = await getForYouSignalSummary(user.id);
       setSignalSummary(summary);
-      setShowOnboarding(!summary.hasEnoughData);
-      setOnboardingStep("intro");
-      setReactionCandidates([]);
+      setHasEnoughData(summary.hasEnoughData);
+
+      if (!summary.hasEnoughData) {
+        setShowOnboarding(true);
+        setRecommendations([]);
+        setMode("onboarding");
+        return;
+      }
+
+      setShowOnboarding(false);
+
+      const result = await getRecommendations(user.id);
+      setRecommendations(result.recommendations || []);
+      setHasEnoughData(result.hasEnoughData);
+      setMode(result.mode || "personalized");
     } catch (err) {
       console.error(err);
       setError("Failed to load recommendations");
     } finally {
-      setLoading(false);
+      if (isRefresh) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
     }
   }, []);
 
@@ -144,6 +172,7 @@ function ForYouPage() {
 
       const updatedSummary = await getForYouSignalSummary(user.id);
       setSignalSummary(updatedSummary);
+      setHasEnoughData(updatedSummary.hasEnoughData);
 
       setOnboardingStep("reactions");
       setReactionCandidates([]);
@@ -179,6 +208,7 @@ function ForYouPage() {
 
       const updatedSummary = await getForYouSignalSummary(user.id);
       setSignalSummary(updatedSummary);
+      setHasEnoughData(updatedSummary.hasEnoughData);
 
       if (nextCandidates.length <= 2) {
         const newCandidates = await getOnboardingCandidates(user.id, 6);
@@ -190,10 +220,6 @@ function ForYouPage() {
     } finally {
       setSavingReactionId(null);
     }
-  }
-
-  function handleOnboardingSkip() {
-    setShowOnboarding(false);
   }
 
   async function handleFinishOnboarding() {
@@ -210,15 +236,27 @@ function ForYouPage() {
         throw new Error("User not logged in");
       }
 
-      const updatedSummary = await getForYouSignalSummary(user.id);
-      setSignalSummary(updatedSummary);
+      const result = await getRecommendations(user.id);
+
       setShowOnboarding(false);
+      setRecommendations(result.recommendations || []);
+      setHasEnoughData(result.hasEnoughData);
+      setMode(result.mode || "personalized");
     } catch (err) {
       console.error(err);
-      setError("Failed to finish onboarding");
+      setError("Failed to generate recommendations");
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleRefresh() {
+    await loadRecommendations(true);
+  }
+
+  function handleOnboardingSkip() {
+    setShowOnboarding(false);
+    setMode("fallback");
   }
 
   async function handleRedoOnboarding() {
@@ -239,9 +277,14 @@ function ForYouPage() {
 
       const updatedSummary = await getForYouSignalSummary(user.id);
       setSignalSummary(updatedSummary);
+      setHasEnoughData(updatedSummary.hasEnoughData);
+
+      setRecommendations([]);
+      setExpandedWhy({});
       setReactionCandidates([]);
-      setShowOnboarding(true);
       setOnboardingStep("intro");
+      setShowOnboarding(true);
+      setMode("onboarding");
     } catch (err) {
       console.error(err);
       setError("Failed to reset onboarding");
@@ -250,17 +293,23 @@ function ForYouPage() {
     }
   }
 
+  function toggleWhyThis(malId) {
+    setExpandedWhy((prev) => ({
+      ...prev,
+      [malId]: !prev[malId],
+    }));
+  }
+
   if (loading) {
     return <div className="p-4">Loading recommendations...</div>;
   }
 
   if (error) {
     return (
-      <div className="p-4 space-y-3">
-        <p className="text-red-500">{error}</p>
+      <div className="p-4">
+        <p className="text-red-500 mb-3">{error}</p>
         <button
-          type="button"
-          onClick={loadRecommendations}
+          onClick={handleRefresh}
           className="border rounded px-3 py-2 hover:bg-gray-100"
         >
           Try Again
@@ -271,8 +320,8 @@ function ForYouPage() {
 
   if (showOnboarding) {
     return (
-      <div className="p-4 max-w-6xl mx-auto space-y-4">
-        <div className="flex justify-end">
+      <div className="p-4 max-w-6xl mx-auto">
+        <div className="flex justify-end mb-4">
           <button
             type="button"
             onClick={handleRedoOnboarding}
@@ -313,7 +362,7 @@ function ForYouPage() {
               </p>
 
               <p className="text-sm opacity-70">
-                {signalSummary.hasEnoughData
+                {hasEnoughData
                   ? "You’ve added enough preference signals to generate personalized recommendations."
                   : `Add ${signalsRemaining} more preference signals for stronger personalized recommendations.`}
               </p>
@@ -338,7 +387,7 @@ function ForYouPage() {
                 onClick={handleFinishOnboarding}
                 className="border rounded px-4 py-2 hover:bg-gray-100"
               >
-                {signalSummary.hasEnoughData
+                {hasEnoughData
                   ? "Get My Recommendations"
                   : "Continue with Current Preferences"}
               </button>
@@ -396,29 +445,146 @@ function ForYouPage() {
   }
 
   return (
-    <div className="p-4 max-w-6xl mx-auto space-y-4">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+    <div className="p-4">
+      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
         <h1 className="text-xl font-bold">For You</h1>
 
-        <button
-          type="button"
-          onClick={handleRedoOnboarding}
-          disabled={resettingOnboarding}
-          className="border rounded px-3 py-2 hover:bg-gray-100 disabled:opacity-60"
-        >
-          {resettingOnboarding ? "Resetting..." : "Redo Onboarding"}
-        </button>
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="border rounded px-3 py-2 hover:bg-gray-100 disabled:opacity-60"
+          >
+            {refreshing ? "Refreshing..." : "Refresh Recommendations"}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleRedoOnboarding}
+            disabled={resettingOnboarding}
+            className="border rounded px-3 py-2 hover:bg-gray-100 disabled:opacity-60"
+          >
+            {resettingOnboarding ? "Resetting..." : "Redo Onboarding"}
+          </button>
+        </div>
       </div>
 
-      <div className="border rounded-2xl p-6 space-y-2">
-        <p className="text-sm opacity-80">
-          Recommendations screen comes next.
+      {!hasEnoughData && (
+        <div className="mb-4 p-3 border rounded">
+          <p className="mb-2">
+            We need a bit more information to personalize your recommendations.
+          </p>
+          <Link to="/profile" className="underline">
+            Edit your profile favorites
+          </Link>
+        </div>
+      )}
+
+      {mode === "fallback" && (
+        <p className="mb-4 text-sm opacity-70">
+          Showing popular anime while we learn your preferences.
         </p>
-        <p className="text-sm opacity-70">
-          Current signals: {signalSummary.totalSignals} /{" "}
-          {signalSummary.minimumSignals}
-        </p>
-      </div>
+      )}
+
+      {recommendations.length === 0 ? (
+        <div className="space-y-3">
+          <p>No recommendations available.</p>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="border rounded px-3 py-2 hover:bg-gray-100 disabled:opacity-60"
+          >
+            {refreshing ? "Refreshing..." : "Refresh Recommendations"}
+          </button>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {recommendations.map((anime) => {
+            const whyExpanded = !!expandedWhy[anime.mal_id];
+
+            return (
+              <div key={anime.mal_id} className="border rounded p-3">
+                <div className="flex gap-4">
+                  <Link to={`/anime/${anime.mal_id}`} className="shrink-0">
+                    {anime.image_url ? (
+                      <img
+                        src={anime.image_url}
+                        alt={anime.title_english || anime.title}
+                        className="w-20 h-28 object-cover rounded"
+                      />
+                    ) : (
+                      <div className="w-20 h-28 border rounded flex items-center justify-center text-xs opacity-60">
+                        No Image
+                      </div>
+                    )}
+                  </Link>
+
+                  <div className="flex-1 min-w-0">
+                    <Link to={`/anime/${anime.mal_id}`}>
+                      <h2 className="font-semibold hover:underline">
+                        {anime.title_english || anime.title}
+                      </h2>
+                    </Link>
+
+                    {anime.score && (
+                      <p className="text-sm opacity-70 mt-1">
+                        Score: {anime.score}
+                      </p>
+                    )}
+
+                    {anime.genres?.length > 0 && (
+                      <p className="text-sm opacity-70 mt-1">
+                        Genres:{" "}
+                        {anime.genres
+                          .map((genre) =>
+                            typeof genre === "string" ? genre : genre.name
+                          )
+                          .filter(Boolean)
+                          .slice(0, 3)
+                          .join(", ")}
+                      </p>
+                    )}
+
+                    <div className="flex gap-2 mt-3 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => toggleWhyThis(anime.mal_id)}
+                        className="border rounded px-3 py-1 text-sm hover:bg-gray-100"
+                      >
+                        {whyExpanded ? "Hide Why This" : "Why This?"}
+                      </button>
+                    </div>
+
+                    {whyExpanded && (
+                      <div className="mt-3 text-sm">
+                        {anime.explanation?.length ? (
+                          <ul className="list-disc ml-5 space-y-1">
+                            {anime.explanation.map((line, index) => (
+                              <li key={index}>{line}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="opacity-70">
+                            This was recommended based on your saved preferences.
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {anime.synopsis && (
+                      <p className="text-sm mt-3">
+                        {anime.synopsis.length > 400
+                          ? `${anime.synopsis.slice(0, 400)}...`
+                          : anime.synopsis}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
