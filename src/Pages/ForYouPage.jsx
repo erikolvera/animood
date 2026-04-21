@@ -1,29 +1,37 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../supabaseClient";
 import OnboardingIntro from "../components/foryou/OnboardingIntro";
-import { getForYouSignalSummary, resetOnboardingData } from "../services/onboardingService";
+import GenrePreferenceStep from "../components/foryou/GenrePreferenceStep";
+import {
+  getForYouSignalSummary,
+  saveGenrePreferences,
+  resetOnboardingData,
+} from "../services/onboardingService";
 
 function ForYouPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState("intro");
+  const [savingGenres, setSavingGenres] = useState(false);
   const [resettingOnboarding, setResettingOnboarding] = useState(false);
 
   const [signalSummary, setSignalSummary] = useState({
     totalSignals: 0,
     hasEnoughData: false,
-    minimumSignals: 15,
+    minimumSignals: 20,
     profileFavorites: [],
     counts: {
-      favorites: 0,
-      likedGenres: 0,
-      dislikedGenres: 0,
-      reactions: 0,
+      profileFavorites: 0,
+      animeRatings: 0,
+      interactions: 0,
+      genrePreferences: 0,
+      onboardingResponses: 0,
     },
   });
 
-  const loadForYouPage = useCallback(async () => {
+  const loadRecommendations = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
@@ -43,18 +51,50 @@ function ForYouPage() {
       setOnboardingStep("intro");
     } catch (err) {
       console.error(err);
-      setError("Failed to load For You page");
+      setError("Failed to load recommendations");
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadForYouPage();
-  }, [loadForYouPage]);
+    loadRecommendations();
+  }, [loadRecommendations]);
 
   function handleOnboardingContinue() {
     setOnboardingStep("genres");
+  }
+
+  function handleOnboardingBackToIntro() {
+    setOnboardingStep("intro");
+  }
+
+  async function handleSaveGenres({ likedGenres, dislikedGenres }) {
+    try {
+      setSavingGenres(true);
+      setError("");
+
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        throw new Error("User not logged in");
+      }
+
+      await saveGenrePreferences(user.id, likedGenres, dislikedGenres);
+
+      const updatedSummary = await getForYouSignalSummary(user.id);
+      setSignalSummary(updatedSummary);
+
+      setShowOnboarding(false);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to save genre preferences");
+    } finally {
+      setSavingGenres(false);
+    }
   }
 
   function handleOnboardingSkip() {
@@ -99,7 +139,7 @@ function ForYouPage() {
         <p className="text-red-500">{error}</p>
         <button
           type="button"
-          onClick={loadForYouPage}
+          onClick={loadRecommendations}
           className="border rounded px-3 py-2 hover:bg-gray-100"
         >
           Try Again
@@ -108,7 +148,7 @@ function ForYouPage() {
     );
   }
 
-  if (showOnboarding && onboardingStep === "intro") {
+  if (showOnboarding) {
     return (
       <div className="p-4 max-w-6xl mx-auto space-y-4">
         <div className="flex justify-end">
@@ -122,23 +162,24 @@ function ForYouPage() {
           </button>
         </div>
 
-        <OnboardingIntro
-          profileFavorites={signalSummary.profileFavorites}
-          totalSignals={signalSummary.totalSignals}
-          minimumSignals={signalSummary.minimumSignals}
-          onContinue={handleOnboardingContinue}
-          onSkip={handleOnboardingSkip}
-        />
-      </div>
-    );
-  }
+        {onboardingStep === "intro" && (
+          <OnboardingIntro
+            profileFavorites={signalSummary.profileFavorites}
+            totalSignals={signalSummary.totalSignals}
+            minimumSignals={signalSummary.minimumSignals}
+            onContinue={handleOnboardingContinue}
+            onSkip={handleOnboardingSkip}
+          />
+        )}
 
-  if (showOnboarding && onboardingStep === "genres") {
-    return (
-      <div className="p-4 max-w-6xl mx-auto space-y-4">
-        <div className="border rounded-2xl p-6">
-          <h1 className="text-xl font-bold mb-2">Genre step coming next</h1>
-        </div>
+        {onboardingStep === "genres" && (
+          <GenrePreferenceStep
+            onSave={handleSaveGenres}
+            onBack={handleOnboardingBackToIntro}
+            onSkip={handleOnboardingSkip}
+            saving={savingGenres}
+          />
+        )}
       </div>
     );
   }

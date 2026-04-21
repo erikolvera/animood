@@ -20,6 +20,7 @@ export async function getForYouSignalSummary(userId) {
     profileResult,
     ratingsResult,
     interactionsResult,
+    genresResult,
     onboardingResult,
   ] = await Promise.all([
     supabase
@@ -39,6 +40,11 @@ export async function getForYouSignalSummary(userId) {
       .eq("user_id", userId),
 
     supabase
+      .from("user_genre_preferences")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId),
+
+    supabase
       .from("user_onboarding_responses")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId),
@@ -47,6 +53,7 @@ export async function getForYouSignalSummary(userId) {
   if (profileResult.error) throw profileResult.error;
   if (ratingsResult.error) throw ratingsResult.error;
   if (interactionsResult.error) throw interactionsResult.error;
+  if (genresResult.error) throw genresResult.error;
   if (onboardingResult.error) throw onboardingResult.error;
 
   const profileFavorites = profileResult.data?.favorite_animes || [];
@@ -55,6 +62,7 @@ export async function getForYouSignalSummary(userId) {
     profileFavorites.length +
     (ratingsResult.count || 0) +
     (interactionsResult.count || 0) +
+    (genresResult.count || 0) +
     (onboardingResult.count || 0);
 
   return {
@@ -66,9 +74,49 @@ export async function getForYouSignalSummary(userId) {
       profileFavorites: profileFavorites.length,
       animeRatings: ratingsResult.count || 0,
       interactions: interactionsResult.count || 0,
+      genrePreferences: genresResult.count || 0,
       onboardingResponses: onboardingResult.count || 0,
     },
   };
+}
+
+export async function saveGenrePreferences(
+  userId,
+  likedGenres = [],
+  dislikedGenres = []
+) {
+  const { error: deleteError } = await supabase
+    .from("user_genre_preferences")
+    .delete()
+    .eq("user_id", userId);
+
+  if (deleteError) throw deleteError;
+
+  const rows = [
+    ...likedGenres.map((genre) => ({
+      user_id: userId,
+      genre_name: genre,
+      preference_type: "like",
+    })),
+    ...dislikedGenres.map((genre) => ({
+      user_id: userId,
+      genre_name: genre,
+      preference_type: "dislike",
+    })),
+  ];
+
+  if (!rows.length) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("user_genre_preferences")
+    .insert(rows)
+    .select();
+
+  if (error) throw error;
+
+  return data || [];
 }
 
 export async function getOnboardingCandidates(userId, limit = 6) {
@@ -106,10 +154,10 @@ export async function getOnboardingCandidates(userId, limit = 6) {
   if (onboardingResult.error) throw onboardingResult.error;
 
   const excludedIds = new Set([
-    ...(profileResult.data?.favorite_animes || []).map((a) => a.mal_id),
-    ...(ratingsResult.data || []).map((a) => a.anime_id),
-    ...(interactionsResult.data || []).map((a) => a.mal_id),
-    ...(onboardingResult.data || []).map((a) => a.mal_id),
+    ...(profileResult.data?.favorite_animes || []).map((item) => item.mal_id),
+    ...(ratingsResult.data || []).map((item) => item.anime_id),
+    ...(interactionsResult.data || []).map((item) => item.mal_id),
+    ...(onboardingResult.data || []).map((item) => item.mal_id),
   ]);
 
   const { data, error } = await supabase
@@ -168,7 +216,9 @@ export async function saveOnboardingResponse(userId, anime, response) {
     year: anime.year || null,
     season: anime.season || null,
     genres: Array.isArray(anime.genres)
-      ? anime.genres.map((g) => (typeof g === "string" ? g : g.name))
+      ? anime.genres
+          .map((g) => (typeof g === "string" ? g : g.name))
+          .filter(Boolean)
       : [],
   };
 
@@ -189,16 +239,25 @@ export async function saveOnboardingResponse(userId, anime, response) {
     .select();
 
   if (error) throw error;
+
   return data || [];
 }
 
 export async function resetOnboardingData(userId) {
-  const { error } = await supabase
-    .from("user_onboarding_responses")
-    .delete()
-    .eq("user_id", userId);
+  const [genreDelete, responseDelete] = await Promise.all([
+    supabase
+      .from("user_genre_preferences")
+      .delete()
+      .eq("user_id", userId),
 
-  if (error) throw error;
+    supabase
+      .from("user_onboarding_responses")
+      .delete()
+      .eq("user_id", userId),
+  ]);
+
+  if (genreDelete.error) throw genreDelete.error;
+  if (responseDelete.error) throw responseDelete.error;
 
   return true;
-}
+} 
