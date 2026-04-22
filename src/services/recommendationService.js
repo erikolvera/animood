@@ -213,7 +213,7 @@ export function scoreCandidates(candidates, inputs) {
 
   return candidates
     .map((anime) => {
-      const recommendationScore = scoreCandidate(
+      const scoringDetails = getCandidateScoringDetails(
         anime,
         inputs,
         favoriteGenreCounts,
@@ -221,12 +221,8 @@ export function scoreCandidates(candidates, inputs) {
         dislikedSeedGenreCounts
       );
 
-      const explanation = buildExplanation(
-        anime,
-        inputs,
-        favoriteGenreCounts,
-        likedSeedGenreCounts
-      );
+      const recommendationScore = scoreCandidate(scoringDetails);
+      const explanation = buildExplanation(anime, scoringDetails);
 
       return {
         ...anime,
@@ -237,60 +233,13 @@ export function scoreCandidates(candidates, inputs) {
     .sort((a, b) => b.recommendationScore - a.recommendationScore);
 }
 
-function scoreCandidate(
+function getCandidateScoringDetails(
   anime,
   inputs,
   favoriteGenreCounts,
   likedSeedGenreCounts,
   dislikedSeedGenreCounts
 ) {
-  let score = 0;
-  const candidateGenres = getGenreNames(anime);
-
-  for (const genre of candidateGenres) {
-    if (favoriteGenreCounts[genre]) {
-      score += favoriteGenreCounts[genre] * 4;
-    }
-
-    if (likedSeedGenreCounts[genre]) {
-      score += likedSeedGenreCounts[genre] * 3;
-    }
-
-    if (dislikedSeedGenreCounts[genre]) {
-      score -= dislikedSeedGenreCounts[genre] * 4;
-    }
-
-    if ((inputs.likedGenres || []).includes(genre)) {
-      score += 3;
-    }
-
-    if ((inputs.dislikedGenres || []).includes(genre)) {
-      score -= 5;
-    }
-  }
-
-  if (anime.score != null) {
-    score += Number(anime.score) * 0.2;
-  }
-
-  if (anime.members != null && Number(anime.members) > 0) {
-    score += Math.min(Math.log10(Number(anime.members)), 6) * 0.75;
-  }
-
-  if (anime.popularity != null && Number(anime.popularity) > 0) {
-    score += Math.max(0, 3 - Math.log10(Number(anime.popularity)));
-  }
-
-  return score;
-}
-
-function buildExplanation(
-  anime,
-  inputs,
-  favoriteGenreCounts,
-  likedSeedGenreCounts
-) {
-  const explanation = [];
   const candidateGenres = getGenreNames(anime);
 
   const matchingFavoriteGenres = candidateGenres.filter(
@@ -301,51 +250,215 @@ function buildExplanation(
     (genre) => likedSeedGenreCounts[genre]
   );
 
+  const matchingDislikedSeedGenres = candidateGenres.filter(
+    (genre) => dislikedSeedGenreCounts[genre]
+  );
+
   const matchingLikedGenres = candidateGenres.filter((genre) =>
     (inputs.likedGenres || []).includes(genre)
   );
 
+  const matchingDislikedGenres = candidateGenres.filter((genre) =>
+    (inputs.dislikedGenres || []).includes(genre)
+  );
+
+  const sourcesMatched = [
+    matchingFavoriteGenres.length > 0,
+    matchingLikedSeedGenres.length > 0,
+    matchingLikedGenres.length > 0,
+  ].filter(Boolean).length;
+
+  return {
+    anime,
+    candidateGenres,
+    matchingFavoriteGenres,
+    matchingLikedSeedGenres,
+    matchingDislikedSeedGenres,
+    matchingLikedGenres,
+    matchingDislikedGenres,
+    sourcesMatched,
+    favoriteGenreCounts,
+    likedSeedGenreCounts,
+    dislikedSeedGenreCounts,
+  };
+}
+
+function scoreCandidate(details) {
+  const {
+    anime,
+    matchingFavoriteGenres,
+    matchingLikedSeedGenres,
+    matchingDislikedSeedGenres,
+    matchingLikedGenres,
+    matchingDislikedGenres,
+    favoriteGenreCounts,
+    likedSeedGenreCounts,
+    dislikedSeedGenreCounts,
+    sourcesMatched,
+  } = details;
+
+  let score = 0;
+
+  // Favorites should be the strongest positive signal.
+  for (const genre of matchingFavoriteGenres) {
+    score += 5;
+    score += Math.min(favoriteGenreCounts[genre] || 0, 3) * 1.25;
+  }
+
+  // Positive onboarding reactions matter, but a bit less than favorites.
+  for (const genre of matchingLikedSeedGenres) {
+    score += 3.5;
+    score += Math.min(likedSeedGenreCounts[genre] || 0, 2) * 1.0;
+  }
+
+  // Explicit liked genres are useful, but weaker than concrete anime signals.
+  for (const genre of matchingLikedGenres) {
+    score += 2.5;
+  }
+
+  // Disliked onboarding seeds should hurt hard.
+  for (const genre of matchingDislikedSeedGenres) {
+    score -= 5.5;
+    score -= Math.min(dislikedSeedGenreCounts[genre] || 0, 2) * 1.25;
+  }
+
+  // Explicit disliked genres should also hurt hard.
+  for (const genre of matchingDislikedGenres) {
+    score -= 6;
+  }
+
+  // Reward agreement across multiple positive signal sources.
+  if (sourcesMatched >= 2) {
+    score += 4;
+  }
+
+  if (sourcesMatched >= 3) {
+    score += 3;
+  }
+
+  // Reward richer overlap a little.
+  const totalPositiveMatches =
+    matchingFavoriteGenres.length +
+    matchingLikedSeedGenres.length +
+    matchingLikedGenres.length;
+
+  score += Math.min(totalPositiveMatches, 5) * 0.75;
+
+  // Keep MAL score / popularity as tie-breakers, not main drivers.
+  if (anime.score != null) {
+    score += Number(anime.score) * 0.12;
+  }
+
+  if (anime.members != null && Number(anime.members) > 0) {
+    score += Math.min(Math.log10(Number(anime.members)), 6) * 0.35;
+  }
+
+  if (anime.popularity != null && Number(anime.popularity) > 0) {
+    score += Math.max(0, 2 - Math.log10(Number(anime.popularity))) * 0.35;
+  }
+
+  // Small penalty when a candidate only has weak popularity support and no preference fit.
+  if (
+    matchingFavoriteGenres.length === 0 &&
+    matchingLikedSeedGenres.length === 0 &&
+    matchingLikedGenres.length === 0
+  ) {
+    score -= 2;
+  }
+
+  return score;
+}
+
+function buildExplanation(anime, details) {
+  const {
+    matchingFavoriteGenres,
+    matchingLikedSeedGenres,
+    matchingLikedGenres,
+    matchingDislikedSeedGenres,
+    matchingDislikedGenres,
+    sourcesMatched,
+  } = details;
+
+  const reasons = [];
+
   if (matchingFavoriteGenres.length > 0) {
-    explanation.push(
-      `Matches genres from your favorites: ${matchingFavoriteGenres
+    reasons.push({
+      priority: 100,
+      text: `Matches genres from your favorites: ${matchingFavoriteGenres
         .slice(0, 3)
-        .join(", ")}.`
-    );
+        .join(", ")}.`,
+    });
   }
 
   if (matchingLikedSeedGenres.length > 0) {
-    explanation.push(
-      `Similar to anime you reacted positively to through: ${matchingLikedSeedGenres
+    reasons.push({
+      priority: 90,
+      text: `Similar to anime you reacted positively to through: ${matchingLikedSeedGenres
         .slice(0, 3)
-        .join(", ")}.`
-    );
+        .join(", ")}.`,
+    });
   }
 
   if (matchingLikedGenres.length > 0) {
-    explanation.push(
-      `Includes genres you said you like: ${matchingLikedGenres
+    reasons.push({
+      priority: 75,
+      text: `Includes genres you said you like: ${matchingLikedGenres
         .slice(0, 3)
-        .join(", ")}.`
-    );
+        .join(", ")}.`,
+    });
   }
 
-  if (explanation.length < 2 && anime.score != null && Number(anime.score) >= 8) {
-    explanation.push(`Highly rated with a score of ${anime.score}.`);
+  if (sourcesMatched >= 2) {
+    reasons.push({
+      priority: 80,
+      text: "Matches multiple parts of your preference profile.",
+    });
   }
 
   if (
-    explanation.length < 2 &&
+    reasons.length < 2 &&
+    anime.score != null &&
+    Number(anime.score) >= 8
+  ) {
+    reasons.push({
+      priority: 40,
+      text: `Highly rated with a score of ${anime.score}.`,
+    });
+  }
+
+  if (
+    reasons.length < 2 &&
     anime.members != null &&
     Number(anime.members) >= 100000
   ) {
-    explanation.push("Popular with a large audience on MyAnimeList.");
+    reasons.push({
+      priority: 30,
+      text: "Popular with a large audience on MyAnimeList.",
+    });
   }
 
-  if (explanation.length === 0) {
-    explanation.push("Recommended based on your saved preferences.");
+  // Only use softer fallback wording if we don't have stronger reasons.
+  if (reasons.length === 0) {
+    if (
+      matchingDislikedSeedGenres.length === 0 &&
+      matchingDislikedGenres.length === 0
+    ) {
+      reasons.push({
+        priority: 10,
+        text: "Recommended based on your saved preferences.",
+      });
+    } else {
+      reasons.push({
+        priority: 10,
+        text: "Included as a lower-confidence match from your current profile.",
+      });
+    }
   }
 
-  return explanation.slice(0, 3);
+  return reasons
+    .sort((a, b) => b.priority - a.priority)
+    .slice(0, 3)
+    .map((reason) => reason.text);
 }
 
 async function fetchAnimeCacheByIds(ids) {

@@ -25,6 +25,7 @@ function ForYouPage() {
   const [savingGenres, setSavingGenres] = useState(false);
 
   const [expandedWhy, setExpandedWhy] = useState({});
+  const [feedbackLoading, setFeedbackLoading] = useState({});
 
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState("intro");
@@ -254,9 +255,31 @@ function ForYouPage() {
     await loadRecommendations(true);
   }
 
-  function handleOnboardingSkip() {
-    setShowOnboarding(false);
-    setMode("fallback");
+  async function handleOnboardingSkip() {
+    try {
+      setError("");
+      setLoading(true);
+
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        throw new Error("User not logged in");
+      }
+
+      const result = await getRecommendations(user.id);
+      setShowOnboarding(false);
+      setRecommendations(result.recommendations || []);
+      setHasEnoughData(result.hasEnoughData);
+      setMode(result.mode || "fallback");
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load fallback recommendations");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleRedoOnboarding() {
@@ -281,6 +304,7 @@ function ForYouPage() {
 
       setRecommendations([]);
       setExpandedWhy({});
+      setFeedbackLoading({});
       setReactionCandidates([]);
       setOnboardingStep("intro");
       setShowOnboarding(true);
@@ -298,6 +322,69 @@ function ForYouPage() {
       ...prev,
       [malId]: !prev[malId],
     }));
+  }
+
+  async function handleNotInterested(e, anime) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    setFeedbackLoading((prev) => ({
+      ...prev,
+      [anime.mal_id]: true,
+    }));
+
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        throw new Error("User not logged in");
+      }
+
+      const { error: upsertError } = await supabase
+        .from("user_anime_interactions")
+        .upsert(
+          [
+            {
+              user_id: user.id,
+              mal_id: anime.mal_id,
+              disliked: true,
+              liked: false,
+              is_favorite: false,
+            },
+          ],
+          { onConflict: "user_id, mal_id" }
+        );
+
+      if (upsertError) {
+        throw upsertError;
+      }
+
+      setRecommendations((prev) =>
+        prev.filter((item) => item.mal_id !== anime.mal_id)
+      );
+
+      setExpandedWhy((prev) => {
+        const updated = { ...prev };
+        delete updated[anime.mal_id];
+        return updated;
+      });
+
+      setFeedbackLoading((prev) => {
+        const updated = { ...prev };
+        delete updated[anime.mal_id];
+        return updated;
+      });
+    } catch (err) {
+      console.error(err);
+      setError("Failed to save feedback");
+      setFeedbackLoading((prev) => ({
+        ...prev,
+        [anime.mal_id]: false,
+      }));
+    }
   }
 
   if (loading) {
@@ -501,6 +588,7 @@ function ForYouPage() {
         <div className="grid gap-4">
           {recommendations.map((anime) => {
             const whyExpanded = !!expandedWhy[anime.mal_id];
+            const isFeedbackLoading = !!feedbackLoading[anime.mal_id];
 
             return (
               <div key={anime.mal_id} className="border rounded p-3">
@@ -552,6 +640,15 @@ function ForYouPage() {
                         className="border rounded px-3 py-1 text-sm hover:bg-gray-100"
                       >
                         {whyExpanded ? "Hide Why This" : "Why This?"}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => handleNotInterested(e, anime)}
+                        disabled={isFeedbackLoading}
+                        className="border rounded px-3 py-1 text-sm hover:bg-gray-100 disabled:opacity-60"
+                      >
+                        {isFeedbackLoading ? "Saving..." : "Not Interested"}
                       </button>
                     </div>
 
