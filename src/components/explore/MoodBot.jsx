@@ -42,11 +42,22 @@ export default function MoodBot() {
             // Give the illusion of infinite anime by randomizing the page
             const randomPage = Math.floor(Math.random() * 20) + 1;
 
-            const response = await fetch(`https://api.jikan.moe/v4/anime?genres=${primaryGenre}&page=${randomPage}&limit=3&order_by=score&sort=desc`);
+            const response = await fetch(`https://api.jikan.moe/v4/anime?genres=${primaryGenre}&page=${randomPage}&limit=15&order_by=score&sort=desc`);
             const data = await response.json();
 
-            // Map over the anime objects to extract just the english or default titles
-            const titles = data.data.map(anime => anime.title_english || anime.title);
+            // Jikan API doesn't natively filter out sequels
+            const sequelKeywords = ["season 2", "season 3", "season 4", "season 5", "season 6", "2nd season", "3rd season", "4th season", "5th season", "part 2", "part 3", "part ii", "part iii"];
+            
+            const filteredAnime = (data.data || []).filter(anime => {
+                const title = (anime.title_english || anime.title || "").toLowerCase();
+                return !sequelKeywords.some(keyword => title.includes(keyword));
+            });
+
+            // Take the top 3 from our filtered list
+            const top3Anime = filteredAnime.slice(0, 3);
+
+            // Map over the anime objects to extract titles
+            const titles = top3Anime.map(anime => anime.title_english || anime.title);
 
             // Fallback in case Jikan doesn't find anything
             if (titles.length === 0) {
