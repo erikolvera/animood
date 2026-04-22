@@ -1,5 +1,11 @@
 import { supabase } from "../supabaseClient";
 import { upsertAnimeCache } from "./animeCacheService";
+import {
+  dedupeByFranchise,
+  buildFranchiseKeySet,
+  getFranchiseKey,
+  filterObviousBadEntryPoints
+} from "./dedupingService";
 
 const MINIMUM_SIGNALS = 20;
 
@@ -119,12 +125,74 @@ export async function saveGenrePreferences(
   return data || [];
 }
 
+async function fetchAnimeCacheByIds(ids) {
+  const normalizedIds = [...new Set((ids || []).map(Number).filter(Boolean))];
+
+  if (!normalizedIds.length) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("anime_cache")
+    .select(`
+      mal_id,
+      title,
+      title_english,
+      synopsis,
+      image_url,
+      type,
+      episodes,
+      score,
+      popularity,
+      members,
+      year,
+      season,
+      genres
+    `)
+    .in("mal_id", normalizedIds);
+
+  if (error) throw error;
+  return data || [];
+}
+
+function safeArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function scoreOnboardingCandidate(anime, likedGenres, dislikedGenres) {
+  let score = 0;
+  const animeGenres = safeArray(anime.genres).map((genre) =>
+    typeof genre === "string" ? genre : genre?.name
+  ).filter(Boolean);
+
+  for (const genre of animeGenres) {
+    if (likedGenres.includes(genre)) {
+      score += 4;
+    }
+
+    if (dislikedGenres.includes(genre)) {
+      score -= 5;
+    }
+  }
+
+  if (anime.score != null) {
+    score += Number(anime.score) * 0.15;
+  }
+
+  if (anime.members != null && Number(anime.members) > 0) {
+    score += Math.min(Math.log10(Number(anime.members)), 6) * 0.5;
+  }
+
+  return score;
+}
+
 export async function getOnboardingCandidates(userId, limit = 6) {
   const [
     profileResult,
     ratingsResult,
     interactionsResult,
     onboardingResult,
+    genresResult,
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -146,19 +214,41 @@ export async function getOnboardingCandidates(userId, limit = 6) {
       .from("user_onboarding_responses")
       .select("mal_id")
       .eq("user_id", userId),
+
+    supabase
+      .from("user_genre_preferences")
+      .select("genre_name, preference_type")
+      .eq("user_id", userId),
   ]);
 
   if (profileResult.error) throw profileResult.error;
   if (ratingsResult.error) throw ratingsResult.error;
   if (interactionsResult.error) throw interactionsResult.error;
   if (onboardingResult.error) throw onboardingResult.error;
+  if (genresResult.error) throw genresResult.error;
+
+  const profileFavorites = profileResult.data?.favorite_animes || [];
 
   const excludedIds = new Set([
-    ...(profileResult.data?.favorite_animes || []).map((item) => item.mal_id),
-    ...(ratingsResult.data || []).map((item) => item.anime_id),
-    ...(interactionsResult.data || []).map((item) => item.mal_id),
-    ...(onboardingResult.data || []).map((item) => item.mal_id),
+    ...profileFavorites.map((item) => Number(item.mal_id)).filter(Boolean),
+    ...(ratingsResult.data || []).map((item) => Number(item.anime_id)).filter(Boolean),
+    ...(interactionsResult.data || []).map((item) => Number(item.mal_id)).filter(Boolean),
+    ...(onboardingResult.data || []).map((item) => Number(item.mal_id)).filter(Boolean),
   ]);
+
+  const knownAnimeFromCache = await fetchAnimeCacheByIds([...excludedIds]);
+  const excludedFranchiseKeys = buildFranchiseKeySet([
+    ...profileFavorites,
+    ...knownAnimeFromCache,
+  ]);
+
+  const likedGenres = (genresResult.data || [])
+    .filter((item) => item.preference_type === "like")
+    .map((item) => item.genre_name);
+
+  const dislikedGenres = (genresResult.data || [])
+    .filter((item) => item.preference_type === "dislike")
+    .map((item) => item.genre_name);
 
   const { data, error } = await supabase
     .from("anime_cache")
@@ -182,11 +272,24 @@ export async function getOnboardingCandidates(userId, limit = 6) {
 
   if (error) throw error;
 
-  const filtered = (data || []).filter(
-    (anime) => !excludedIds.has(anime.mal_id)
-  );
+  const filtered = (data || []).filter((anime) => {
+    if (!anime?.mal_id) return false;
+    if (excludedIds.has(Number(anime.mal_id))) return false;
+    if (excludedFranchiseKeys.has(getFranchiseKey(anime))) return false;
+    return true;
+  });
 
-  return filtered.slice(0, limit);
+  const cleaned = filterObviousBadEntryPoints(filtered);
+  const deduped = dedupeByFranchise(cleaned);
+
+  const scored = deduped
+    .map((anime) => ({
+      ...anime,
+      onboardingScore: scoreOnboardingCandidate(anime, likedGenres, dislikedGenres),
+    }))
+    .sort((a, b) => b.onboardingScore - a.onboardingScore);
+
+  return scored.slice(0, limit);
 }
 
 export async function saveOnboardingResponse(userId, anime, response) {
@@ -260,4 +363,4 @@ export async function resetOnboardingData(userId) {
   if (responseDelete.error) throw responseDelete.error;
 
   return true;
-} 
+}
