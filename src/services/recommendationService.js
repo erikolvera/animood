@@ -1,5 +1,12 @@
 import { supabase } from "../supabaseClient";
 import { getForYouSignalSummary } from "./onboardingService";
+import {
+  dedupeByFranchise,
+  dedupeScoredByFranchise,
+  buildFranchiseKeySet,
+  getFranchiseKey,
+  filterObviousBadEntryPoints,
+} from "./dedupingService";
 
 const MINIMUM_SIGNALS = 20;
 
@@ -10,15 +17,18 @@ export async function getRecommendations(userId) {
 
   const inputs = await getRecommendationInputs(userId);
   const excludedIds = buildExcludedIds(inputs);
-  const candidates = await loadCandidatePool(excludedIds, 300);
+  const excludedFranchiseKeys = await buildExcludedFranchiseKeys(inputs);
+  const candidates = await loadCandidatePool(
+    excludedIds,
+    excludedFranchiseKeys,
+    300
+  );
 
   if (!inputs.hasEnoughData) {
     return {
       recommendations: candidates.slice(0, 20).map((anime) => ({
         ...anime,
-        explanation: [
-          "Popular anime while we learn your preferences.",
-        ],
+        explanation: ["Popular anime while we learn your preferences."],
       })),
       hasEnoughData: false,
       mode: "fallback",
@@ -166,7 +176,26 @@ export function buildExcludedIds(inputs) {
   return excludedIds;
 }
 
-export async function loadCandidatePool(excludedIds, limit = 300) {
+export async function buildExcludedFranchiseKeys(inputs) {
+  const knownIds = [
+    ...(inputs.animeRatings || []).map((item) => Number(item.anime_id)),
+    ...(inputs.interactions || []).map((item) => Number(item.mal_id)),
+    ...(inputs.onboardingResponses || []).map((item) => Number(item.mal_id)),
+  ].filter(Boolean);
+
+  const knownAnimeFromCache = await fetchAnimeCacheByIds(knownIds);
+
+  return buildFranchiseKeySet([
+    ...(inputs.profileFavorites || []),
+    ...knownAnimeFromCache,
+  ]);
+}
+
+export async function loadCandidatePool(
+  excludedIds,
+  excludedFranchiseKeys,
+  limit = 300
+) {
   const fetchLimit = Math.max(limit * 3, 100);
 
   const { data, error } = await supabase
@@ -200,18 +229,28 @@ export async function loadCandidatePool(excludedIds, limit = 300) {
   const filtered = (data || []).filter((anime) => {
     if (!anime?.mal_id) return false;
     if (excludedIds.has(Number(anime.mal_id))) return false;
+    if (excludedFranchiseKeys.has(getFranchiseKey(anime))) return false;
     return true;
   });
 
-  return filtered.slice(0, limit);
+  const cleaned = filterObviousBadEntryPoints(filtered);
+  const deduped = dedupeByFranchise(cleaned);
+
+  return deduped.slice(0, limit);
 }
 
 export function scoreCandidates(candidates, inputs) {
-  const favoriteGenreCounts = buildGenreFrequencyMap(inputs.profileFavorites || []);
-  const likedSeedGenreCounts = buildGenreFrequencyMap(inputs.likedOnboardingAnime || []);
-  const dislikedSeedGenreCounts = buildGenreFrequencyMap(inputs.dislikedOnboardingAnime || []);
+  const favoriteGenreCounts = buildGenreFrequencyMap(
+    inputs.profileFavorites || []
+  );
+  const likedSeedGenreCounts = buildGenreFrequencyMap(
+    inputs.likedOnboardingAnime || []
+  );
+  const dislikedSeedGenreCounts = buildGenreFrequencyMap(
+    inputs.dislikedOnboardingAnime || []
+  );
 
-  return candidates
+  const scored = candidates
     .map((anime) => {
       const scoringDetails = getCandidateScoringDetails(
         anime,
@@ -231,6 +270,8 @@ export function scoreCandidates(candidates, inputs) {
       };
     })
     .sort((a, b) => b.recommendationScore - a.recommendationScore);
+
+  return dedupeScoredByFranchise(scored);
 }
 
 function getCandidateScoringDetails(
@@ -299,35 +340,29 @@ function scoreCandidate(details) {
 
   let score = 0;
 
-  // Favorites should be the strongest positive signal.
   for (const genre of matchingFavoriteGenres) {
     score += 5;
     score += Math.min(favoriteGenreCounts[genre] || 0, 3) * 1.25;
   }
 
-  // Positive onboarding reactions matter, but a bit less than favorites.
   for (const genre of matchingLikedSeedGenres) {
     score += 3.5;
     score += Math.min(likedSeedGenreCounts[genre] || 0, 2) * 1.0;
   }
 
-  // Explicit liked genres are useful, but weaker than concrete anime signals.
   for (const genre of matchingLikedGenres) {
     score += 2.5;
   }
 
-  // Disliked onboarding seeds should hurt hard.
   for (const genre of matchingDislikedSeedGenres) {
     score -= 5.5;
     score -= Math.min(dislikedSeedGenreCounts[genre] || 0, 2) * 1.25;
   }
 
-  // Explicit disliked genres should also hurt hard.
   for (const genre of matchingDislikedGenres) {
     score -= 6;
   }
 
-  // Reward agreement across multiple positive signal sources.
   if (sourcesMatched >= 2) {
     score += 4;
   }
@@ -336,7 +371,6 @@ function scoreCandidate(details) {
     score += 3;
   }
 
-  // Reward richer overlap a little.
   const totalPositiveMatches =
     matchingFavoriteGenres.length +
     matchingLikedSeedGenres.length +
@@ -344,7 +378,6 @@ function scoreCandidate(details) {
 
   score += Math.min(totalPositiveMatches, 5) * 0.75;
 
-  // Keep MAL score / popularity as tie-breakers, not main drivers.
   if (anime.score != null) {
     score += Number(anime.score) * 0.12;
   }
@@ -357,7 +390,6 @@ function scoreCandidate(details) {
     score += Math.max(0, 2 - Math.log10(Number(anime.popularity))) * 0.35;
   }
 
-  // Small penalty when a candidate only has weak popularity support and no preference fit.
   if (
     matchingFavoriteGenres.length === 0 &&
     matchingLikedSeedGenres.length === 0 &&
@@ -415,11 +447,7 @@ function buildExplanation(anime, details) {
     });
   }
 
-  if (
-    reasons.length < 2 &&
-    anime.score != null &&
-    Number(anime.score) >= 8
-  ) {
+  if (reasons.length < 2 && anime.score != null && Number(anime.score) >= 8) {
     reasons.push({
       priority: 40,
       text: `Highly rated with a score of ${anime.score}.`,
@@ -437,7 +465,6 @@ function buildExplanation(anime, details) {
     });
   }
 
-  // Only use softer fallback wording if we don't have stronger reasons.
   if (reasons.length === 0) {
     if (
       matchingDislikedSeedGenres.length === 0 &&
