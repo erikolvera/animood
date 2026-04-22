@@ -47,6 +47,9 @@ function ForYouPage() {
   const [savingReactionId, setSavingReactionId] = useState(null);
   const [resettingOnboarding, setResettingOnboarding] = useState(false);
 
+  const [watchlistMap, setWatchlistMap] = useState({});
+  const [watchlistLoading, setWatchlistLoading] = useState({}); 
+
   const loadRecommendations = useCallback(async (isRefresh = false) => {
     if (isRefresh) {
       setRefreshing(true);
@@ -74,6 +77,7 @@ function ForYouPage() {
         setShowOnboarding(true);
         setRecommendations([]);
         setMode("onboarding");
+        setWatchlistMap({});
         return;
       }
 
@@ -137,6 +141,34 @@ function ForYouPage() {
     reactionCandidates.length,
     loadReactionCandidates,
   ]);
+
+  async function loadWatchlistStatus(userId, animeList) {
+    const animeIds = (animeList || [])
+      .map((anime) => Number(anime.mal_id))
+      .filter(Boolean);
+
+    if (!animeIds.length) {
+      setWatchlistMap({});
+      return;
+    }
+
+  const { data, error } = await supabase
+    .from("watchlists")
+    .select("anime_id")
+    .eq("user_id", userId)
+    .in("anime_id", animeIds);
+
+  if (error) {
+    throw error;
+  }
+
+  const nextMap = {};
+  for (const row of data || []) {
+    nextMap[row.anime_id] = true;
+  }
+
+  setWatchlistMap(nextMap);
+}
 
   const signalsRemaining = Math.max(
     0,
@@ -243,6 +275,7 @@ function ForYouPage() {
       setRecommendations(result.recommendations || []);
       setHasEnoughData(result.hasEnoughData);
       setMode(result.mode || "personalized");
+      await loadWatchlistStatus(user.id, result.recommendations || []);
     } catch (err) {
       console.error(err);
       setError("Failed to generate recommendations");
@@ -274,6 +307,7 @@ function ForYouPage() {
       setRecommendations(result.recommendations || []);
       setHasEnoughData(result.hasEnoughData);
       setMode(result.mode || "fallback");
+      await loadWatchlistStatus(user.id, result.recommendations || []);
     } catch (err) {
       console.error(err);
       setError("Failed to load fallback recommendations");
@@ -305,6 +339,8 @@ function ForYouPage() {
       setRecommendations([]);
       setExpandedWhy({});
       setFeedbackLoading({});
+      setWatchlistMap({});
+      setWatchlistLoading({});
       setReactionCandidates([]);
       setOnboardingStep("intro");
       setShowOnboarding(true);
@@ -381,6 +417,70 @@ function ForYouPage() {
       console.error(err);
       setError("Failed to save feedback");
       setFeedbackLoading((prev) => ({
+        ...prev,
+        [anime.mal_id]: false,
+      }));
+    }
+  }
+
+  async function handleToggleWatchlist(e, anime) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    setWatchlistLoading((prev) => ({
+      ...prev,
+      [anime.mal_id]: true,
+    }));
+
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        throw new Error("User not logged in");
+      }
+
+      const animeId = Number(anime.mal_id);
+      const isInWatchlist = !!watchlistMap[animeId];
+
+      if (isInWatchlist) {
+        const { error: removeError } = await supabase
+          .from("watchlists")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("anime_id", animeId);
+
+        if (removeError) throw removeError;
+
+        setWatchlistMap((prev) => {
+          const updated = { ...prev };
+          delete updated[animeId];
+          return updated;
+        });
+      } else {
+        const { error: insertError } = await supabase
+          .from("watchlists")
+          .insert({
+            user_id: user.id,
+            anime_id: animeId,
+            title: anime.title || anime.title_english || "",
+            image_url: anime.image_url || null,
+          });
+
+        if (insertError) throw insertError;
+
+        setWatchlistMap((prev) => ({
+          ...prev,
+          [animeId]: true,
+        }));
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Failed to update watchlist");
+    } finally {
+      setWatchlistLoading((prev) => ({
         ...prev,
         [anime.mal_id]: false,
       }));
@@ -589,6 +689,8 @@ function ForYouPage() {
           {recommendations.map((anime) => {
             const whyExpanded = !!expandedWhy[anime.mal_id];
             const isFeedbackLoading = !!feedbackLoading[anime.mal_id];
+            const isInWatchlist = !!watchlistMap[anime.mal_id];
+            const isWatchlistLoading = !!watchlistLoading[anime.mal_id];
 
             return (
               <div key={anime.mal_id} className="border rounded p-3">
@@ -640,6 +742,19 @@ function ForYouPage() {
                         className="border rounded px-3 py-1 text-sm hover:bg-gray-100"
                       >
                         {whyExpanded ? "Hide Why This" : "Why This?"}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => handleToggleWatchlist(e, anime)}
+                        disabled={isWatchlistLoading}
+                        className="border rounded px-3 py-1 text-sm hover:bg-gray-100 disabled:opacity-60"
+                      >
+                        {isWatchlistLoading
+                          ? "Updating..."
+                          : isInWatchlist
+                            ? "Remove from Watchlist"
+                            : "Add to Watchlist"}
                       </button>
 
                       <button
