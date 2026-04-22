@@ -12,11 +12,13 @@ function normalizeRomanNumerals(title = "") {
 }
 
 function cleanTitle(title = "") {
-  let value = title.toLowerCase().trim();
+  let raw = normalizeRomanNumerals(title.toLowerCase().trim());
 
-  value = normalizeRomanNumerals(value);
+  if (subtitleLooksLikeContinuation(raw)) {
+    raw = raw.split(":")[0].trim();
+  }
 
-  value = value
+  return raw
     .replace(/&/g, " and ")
     .replace(/[:\-!,.;()'"]/g, " ")
 
@@ -57,14 +59,48 @@ function cleanTitle(title = "") {
 
     .replace(/\s+/g, " ")
     .trim();
+}
+function subtitleLooksLikeContinuation(title = "") {
+  const lower = normalizeRomanNumerals(title.toLowerCase()).trim();
 
-  return value;
+  const parts = lower.split(":");
+  if (parts.length < 2) {
+    return false;
+  }
+
+  const subtitle = parts.slice(1).join(":").trim();
+
+  return (
+    /\bfinal season\b/.test(subtitle) ||
+    /\bthe final\b/.test(subtitle) ||
+    /\bsecond season\b/.test(subtitle) ||
+    /\bthird season\b/.test(subtitle) ||
+    /\bfourth season\b/.test(subtitle) ||
+    /\bfifth season\b/.test(subtitle) ||
+    /\bseason\s+\d+\b/.test(subtitle) ||
+    /\b\d+(st|nd|rd|th)\s+season\b/.test(subtitle) ||
+    /\bpart\s+\d+\b/.test(subtitle) ||
+    /\b\d+(st|nd|rd|th)\s+part\b/.test(subtitle) ||
+    /\bcour\s+\d+\b/.test(subtitle) ||
+    /\bchapter\s+\d+\b/.test(subtitle) ||
+    /\barc\b/.test(subtitle) ||
+    /\bthe movie\b/.test(subtitle) ||
+    /\bmovie\b/.test(subtitle) ||
+    /\bfilm\b/.test(subtitle) ||
+    /\bfinale\b/.test(subtitle) ||
+    /\bova\b/.test(subtitle) ||
+    /\bona\b/.test(subtitle) ||
+    /\bspecial\b/.test(subtitle) ||
+    /\brecap\b/.test(subtitle) ||
+    /\bsummary\b/.test(subtitle)
+  );
 }
 
 function titleLooksLikeContinuation(title = "") {
-  const lower = normalizeRomanNumerals(title.toLowerCase());
+  const lower = normalizeRomanNumerals(title.toLowerCase()).trim();
 
   return (
+    subtitleLooksLikeContinuation(title) ||
     /\bfinal season\b/.test(lower) ||
     /\bthe final\b/.test(lower) ||
     /\bsecond season\b/.test(lower) ||
@@ -88,6 +124,7 @@ function titleLooksLikeContinuation(title = "") {
     /\brecap\b/.test(lower) ||
     /\bsummary\b/.test(lower) ||
     /\bnext passage\b/.test(lower) ||
+    /\b\d+\s+(2|3|4|5|6|7|8|9)\b/.test(lower) ||
     /\s+\d+$/.test(lower)
   );
 }
