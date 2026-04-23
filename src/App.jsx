@@ -17,6 +17,7 @@ import ExplorePage from "./Pages/ExplorePage";
 import ForYouPage from "./Pages/ForYouPage";
 
 import DiscussionBoard from './Pages/DiscussionBoard'
+import WatchList from './Pages/WatchList'
 
 function App() {
   const [user, setUser] = useState(null)
@@ -60,6 +61,7 @@ function App() {
         <Route path="/anime/:id/episodes" element={<AnimeEpisodes />} />
         <Route path="/search" element={<SearchResults />} />
         <Route path="/explore" element={<ExplorePage />} />
+        <Route path="/watchlist" element={<WatchList />} />
         <Route path="/profile" element={user ? <ProfilePage /> : <Navigate to="/signin" />} />
         <Route path="/foryou" element={<ForYouPage />} />
         <Route path="/discussions" element={<DiscussionBoard />} />

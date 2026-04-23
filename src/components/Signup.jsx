@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { supabase } from "../supabaseClient";
 import { Link } from "react-router-dom";
+import bgImage from "../assets/signinAnimood2.png"; // adjust path as needed
+
 
 const Signup = () => {
   const [email, setEmail] = useState("");
@@ -51,51 +53,82 @@ const Signup = () => {
   };
 
   return (
-    <div>
-      <form onSubmit={handleSubmit} className="max-w-md w-full m-auto">
-        <h2 className="font-bold pb-2"> Sign up today!</h2>
-        <p>
-          Already have an account? <Link to="/signin" className="text-blue-600 hover:underline">Sign in!</Link>
-        </p>
-        <div className="flex flex-col py-4">
-          <input
-            placeholder="Username"
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="border w-full mb-3 p-2 rounded bg-black text-white placeholder-white"
-          />
-          <input
-            placeholder="Email"
-            type="text"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="border w-full mb-3 p-2 rounded bg-black text-white placeholder-white"
-          />
-          <input
-            placeholder="Password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="border w-full mb-3 p-2 rounded bg-black text-white placeholder-white"
-          />
-          <input
-            placeholder="Confirm Password"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="border w-full mb-3 p-2 rounded bg-black text-white placeholder-white"
-          />
-          {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded"
-          >
-            Register
-          </button>
-        </div>
-      </form>
+   <div
+      className="min-h-screen w-full bg-center bg-cover bg-no-repeat flex items-center justify-center px-4"
+      style={{ backgroundImage: `url(${bgImage})` }}
+    >
+      <div className="w-full max-w-md">
+        <form
+          onSubmit={handleSubmit}
+          className="w-full mx-auto flex flex-col items-center"
+        >
+          
+
+          {/* Form container */}
+          <div className="w-full flex flex-col gap-6 mt-30 text-center mb-3">
+            <input
+              placeholder="Username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full px-5 py-4 rounded-full bg-gray-300/90 text-black placeholder-gray-700 outline-none shadow-md"
+            />
+
+            <input
+              placeholder="Email"
+              type="text"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-5 py-4 rounded-full bg-gray-300/90 text-black placeholder-gray-700 outline-none shadow-md"
+            />
+
+            <input
+              placeholder="Password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-5 py-4 rounded-full bg-gray-300/90 text-black placeholder-gray-700 outline-none shadow-md"
+            />
+
+            <input
+              placeholder="Confirm Password"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full px-5 py-4 rounded-full bg-gray-300/90 text-black placeholder-gray-700 outline-none shadow-md"
+            />
+
+            {error && (
+              <p className="text-red-300 text-sm text-center font-medium">
+                {error}
+              </p>
+            )}
+
+            {/* Bottom buttons */}
+            <div className="flex gap-15 justify-center mt-6">
+              <button
+                type="submit"
+                disabled={loading}
+                className="min-w-[190px] bg-gray-300/90 hover:bg-gray-200 text-black font-semibold py-3 px-6 rounded-full shadow-md transition"
+              >
+                {loading ? "Registering..." : "Register"}
+              </button>
+
+              <Link
+                to="/signin"
+                className="min-w-[190px] text-center bg-gray-300/90 hover:bg-gray-200 text-black font-semibold py-3 px-6 rounded-full shadow-md transition"
+              >
+                Sign In
+              </Link>
+            </div>
+
+            <p>
+            Already have an account? <Link to="/signin" className="text-blue-300 hover:underline">Sign in!</Link>
+            </p>
+
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
