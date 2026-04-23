@@ -12,6 +12,7 @@ import {
   getOnboardingCandidates,
   resetOnboardingData,
 } from "../services/onboardingService";
+import "../styles/forYou.css";
 
 function ForYouPage() {
   const [loading, setLoading] = useState(true);
@@ -48,7 +49,35 @@ function ForYouPage() {
   const [resettingOnboarding, setResettingOnboarding] = useState(false);
 
   const [watchlistMap, setWatchlistMap] = useState({});
-  const [watchlistLoading, setWatchlistLoading] = useState({}); 
+  const [watchlistLoading, setWatchlistLoading] = useState({});
+
+  async function loadWatchlistStatus(userId, animeList) {
+    const animeIds = (animeList || [])
+      .map((anime) => Number(anime.mal_id))
+      .filter(Boolean);
+
+    if (!animeIds.length) {
+      setWatchlistMap({});
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("watchlists")
+      .select("anime_id")
+      .eq("user_id", userId)
+      .in("anime_id", animeIds);
+
+    if (error) {
+      throw error;
+    }
+
+    const nextMap = {};
+    for (const row of data || []) {
+      nextMap[row.anime_id] = true;
+    }
+
+    setWatchlistMap(nextMap);
+  }
 
   const loadRecommendations = useCallback(async (isRefresh = false) => {
     if (isRefresh) {
@@ -87,6 +116,7 @@ function ForYouPage() {
       setRecommendations(result.recommendations || []);
       setHasEnoughData(result.hasEnoughData);
       setMode(result.mode || "personalized");
+      await loadWatchlistStatus(user.id, result.recommendations || []);
     } catch (err) {
       console.error(err);
       setError("Failed to load recommendations");
@@ -141,34 +171,6 @@ function ForYouPage() {
     reactionCandidates.length,
     loadReactionCandidates,
   ]);
-
-  async function loadWatchlistStatus(userId, animeList) {
-    const animeIds = (animeList || [])
-      .map((anime) => Number(anime.mal_id))
-      .filter(Boolean);
-
-    if (!animeIds.length) {
-      setWatchlistMap({});
-      return;
-    }
-
-  const { data, error } = await supabase
-    .from("watchlists")
-    .select("anime_id")
-    .eq("user_id", userId)
-    .in("anime_id", animeIds);
-
-  if (error) {
-    throw error;
-  }
-
-  const nextMap = {};
-  for (const row of data || []) {
-    nextMap[row.anime_id] = true;
-  }
-
-  setWatchlistMap(nextMap);
-}
 
   const signalsRemaining = Math.max(
     0,
@@ -488,315 +490,333 @@ function ForYouPage() {
   }
 
   if (loading) {
-    return <div className="p-4">Loading recommendations...</div>;
+    return (
+      <div className="foryou-page">
+        <div className="foryou-shell">
+          <div className="foryou-panel">Loading recommendations...</div>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div className="p-4">
-        <p className="text-red-500 mb-3">{error}</p>
-        <button
-          onClick={handleRefresh}
-          className="border rounded px-3 py-2 hover:bg-gray-100"
-        >
-          Try Again
-        </button>
+      <div className="foryou-page">
+        <div className="foryou-shell">
+          <div className="foryou-panel">
+            <p className="foryou-error mb-3">{error}</p>
+            <button onClick={handleRefresh} className="foryou-button">
+              Try Again
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (showOnboarding) {
     return (
-      <div className="p-4 max-w-6xl mx-auto">
-        <div className="flex justify-end mb-4">
-          <button
-            type="button"
-            onClick={handleRedoOnboarding}
-            disabled={resettingOnboarding}
-            className="border rounded px-3 py-2 hover:bg-gray-100 disabled:opacity-60"
-          >
-            {resettingOnboarding ? "Resetting..." : "Redo Onboarding"}
-          </button>
-        </div>
+      <div className="foryou-page">
+        <div className="foryou-shell">
+          <div className="flex justify-end mb-4">
+            <button
+              type="button"
+              onClick={handleRedoOnboarding}
+              disabled={resettingOnboarding}
+              className="foryou-button"
+            >
+              {resettingOnboarding ? "Resetting..." : "Redo Onboarding"}
+            </button>
+          </div>
 
-        {onboardingStep === "intro" && (
-          <OnboardingIntro
-            profileFavorites={signalSummary.profileFavorites}
-            totalSignals={signalSummary.totalSignals}
-            minimumSignals={signalSummary.minimumSignals}
-            onContinue={handleOnboardingContinue}
-            onSkip={handleOnboardingSkip}
-          />
-        )}
+          {onboardingStep === "intro" && (
+            <OnboardingIntro
+              profileFavorites={signalSummary.profileFavorites}
+              totalSignals={signalSummary.totalSignals}
+              minimumSignals={signalSummary.minimumSignals}
+              onContinue={handleOnboardingContinue}
+              onSkip={handleOnboardingSkip}
+            />
+          )}
 
-        {onboardingStep === "genres" && (
-          <GenrePreferenceStep
-            onSave={handleSaveGenres}
-            onBack={handleOnboardingBackToIntro}
-            onSkip={handleOnboardingSkip}
-            saving={savingGenres}
-          />
-        )}
+          {onboardingStep === "genres" && (
+            <GenrePreferenceStep
+              onSave={handleSaveGenres}
+              onBack={handleOnboardingBackToIntro}
+              onSkip={handleOnboardingSkip}
+              saving={savingGenres}
+            />
+          )}
 
-        {onboardingStep === "reactions" && (
-          <div className="space-y-6">
-            <div className="border rounded-2xl p-6 space-y-2">
-              <h2 className="text-xl font-bold">Quick picks</h2>
+          {onboardingStep === "reactions" && (
+            <div className="space-y-6">
+              <div className="foryou-panel space-y-2">
+                <h2 className="text-xl font-bold">Quick picks</h2>
 
-              <p className="text-sm opacity-80">
-                Tell us what looks interesting, and we’ll use that to improve
-                your first recommendations.
-              </p>
-
-              <p className="text-sm opacity-70">
-                {hasEnoughData
-                  ? "You’ve added enough preference signals to generate personalized recommendations."
-                  : `Add ${signalsRemaining} more preference signals for stronger personalized recommendations.`}
-              </p>
-
-              <p className="text-xs opacity-60">
-                Current signals: {signalSummary.totalSignals} /{" "}
-                {signalSummary.minimumSignals}
-              </p>
-            </div>
-
-            <div className="flex gap-3 flex-wrap">
-              <button
-                type="button"
-                onClick={handleBackToGenres}
-                className="border rounded px-4 py-2 hover:bg-gray-100"
-              >
-                Back
-              </button>
-
-              <button
-                type="button"
-                onClick={handleFinishOnboarding}
-                className="border rounded px-4 py-2 hover:bg-gray-100"
-              >
-                {hasEnoughData
-                  ? "Get My Recommendations"
-                  : "Continue with Current Preferences"}
-              </button>
-
-              <button
-                type="button"
-                onClick={handleOnboardingSkip}
-                className="border rounded px-4 py-2 hover:bg-gray-100"
-              >
-                Skip for now
-              </button>
-            </div>
-
-            {loadingReactions ? (
-              <div className="border rounded-2xl p-6">
-                <p className="text-sm opacity-80">Loading quick picks...</p>
-              </div>
-            ) : reactionCandidates.length === 0 ? (
-              <div className="border rounded-2xl p-6 space-y-3">
-                <p className="text-sm opacity-80">
-                  No onboarding picks are available right now.
+                <p className="text-sm foryou-muted">
+                  Tell us what looks interesting, and we’ll use that to improve
+                  your first recommendations.
                 </p>
+
+                <p className="text-sm foryou-soft">
+                  {hasEnoughData
+                    ? "You’ve added enough preference signals to generate personalized recommendations."
+                    : `Add ${signalsRemaining} more preference signals for stronger personalized recommendations.`}
+                </p>
+
+                <p className="text-xs foryou-soft">
+                  Current signals: {signalSummary.totalSignals} /{" "}
+                  {signalSummary.minimumSignals}
+                </p>
+              </div>
+
+              <div className="flex gap-3 flex-wrap">
+                <button
+                  type="button"
+                  onClick={handleBackToGenres}
+                  className="foryou-button"
+                >
+                  Back
+                </button>
+
                 <button
                   type="button"
                   onClick={handleFinishOnboarding}
-                  className="border rounded px-4 py-2 hover:bg-gray-100"
+                  className="foryou-button foryou-button-primary"
                 >
-                  Continue
+                  {hasEnoughData
+                    ? "Get My Recommendations"
+                    : "Continue with Current Preferences"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleOnboardingSkip}
+                  className="foryou-button"
+                >
+                  Skip for now
                 </button>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {reactionCandidates.map((anime) => (
-                  <ReactionCard
-                    key={anime.mal_id}
-                    anime={anime}
-                    loading={savingReactionId === anime.mal_id}
-                    onLike={(selectedAnime) =>
-                      handleReactionResponse(selectedAnime, "like")
-                    }
-                    onUnsure={(selectedAnime) =>
-                      handleReactionResponse(selectedAnime, "unsure")
-                    }
-                    onDislike={(selectedAnime) =>
-                      handleReactionResponse(selectedAnime, "dislike")
-                    }
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+
+              {loadingReactions ? (
+                <div className="foryou-panel">
+                  <p className="text-sm foryou-muted">Loading quick picks...</p>
+                </div>
+              ) : reactionCandidates.length === 0 ? (
+                <div className="foryou-panel space-y-3">
+                  <p className="text-sm foryou-muted">
+                    No onboarding picks are available right now.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleFinishOnboarding}
+                    className="foryou-button foryou-button-primary"
+                  >
+                    Continue
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {reactionCandidates.map((anime) => (
+                    <ReactionCard
+                      key={anime.mal_id}
+                      anime={anime}
+                      loading={savingReactionId === anime.mal_id}
+                      onLike={(selectedAnime) =>
+                        handleReactionResponse(selectedAnime, "like")
+                      }
+                      onUnsure={(selectedAnime) =>
+                        handleReactionResponse(selectedAnime, "unsure")
+                      }
+                      onDislike={(selectedAnime) =>
+                        handleReactionResponse(selectedAnime, "dislike")
+                      }
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-4">
-      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-        <h1 className="text-xl font-bold">For You</h1>
+    <div className="foryou-page">
+      <div className="foryou-shell">
+        <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
+          <h1 className="foryou-title">For You</h1>
 
-        <div className="flex gap-2 flex-wrap">
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="border rounded px-3 py-2 hover:bg-gray-100 disabled:opacity-60"
-          >
-            {refreshing ? "Refreshing..." : "Refresh Recommendations"}
-          </button>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="foryou-button"
+            >
+              {refreshing ? "Refreshing..." : "Refresh Recommendations"}
+            </button>
 
-          <button
-            type="button"
-            onClick={handleRedoOnboarding}
-            disabled={resettingOnboarding}
-            className="border rounded px-3 py-2 hover:bg-gray-100 disabled:opacity-60"
-          >
-            {resettingOnboarding ? "Resetting..." : "Redo Onboarding"}
-          </button>
+            <button
+              type="button"
+              onClick={handleRedoOnboarding}
+              disabled={resettingOnboarding}
+              className="foryou-button"
+            >
+              {resettingOnboarding ? "Resetting..." : "Redo Onboarding"}
+            </button>
+          </div>
         </div>
-      </div>
 
-      {!hasEnoughData && (
-        <div className="mb-4 p-3 border rounded">
-          <p className="mb-2">
-            We need a bit more information to personalize your recommendations.
+        {!hasEnoughData && (
+          <div className="foryou-panel mb-4">
+            <p className="mb-2 foryou-muted">
+              We need a bit more information to personalize your recommendations.
+            </p>
+            <Link to="/profile" className="foryou-link underline">
+              Edit your profile favorites
+            </Link>
+          </div>
+        )}
+
+        {mode === "fallback" && (
+          <p className="mb-4 text-sm foryou-soft">
+            Showing popular anime while we learn your preferences.
           </p>
-          <Link to="/profile" className="underline">
-            Edit your profile favorites
-          </Link>
-        </div>
-      )}
+        )}
 
-      {mode === "fallback" && (
-        <p className="mb-4 text-sm opacity-70">
-          Showing popular anime while we learn your preferences.
-        </p>
-      )}
+        {recommendations.length === 0 ? (
+          <div className="foryou-panel foryou-empty space-y-3">
+            <p>No recommendations available.</p>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="foryou-button"
+            >
+              {refreshing ? "Refreshing..." : "Refresh Recommendations"}
+            </button>
+          </div>
+        ) : (
+          <div className="foryou-grid">
+            {recommendations.map((anime) => {
+              const whyExpanded = !!expandedWhy[anime.mal_id];
+              const isFeedbackLoading = !!feedbackLoading[anime.mal_id];
+              const isInWatchlist = !!watchlistMap[anime.mal_id];
+              const isWatchlistLoading = !!watchlistLoading[anime.mal_id];
 
-      {recommendations.length === 0 ? (
-        <div className="space-y-3">
-          <p>No recommendations available.</p>
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="border rounded px-3 py-2 hover:bg-gray-100 disabled:opacity-60"
-          >
-            {refreshing ? "Refreshing..." : "Refresh Recommendations"}
-          </button>
-        </div>
-      ) : (
-        <div className="grid gap-4">
-          {recommendations.map((anime) => {
-            const whyExpanded = !!expandedWhy[anime.mal_id];
-            const isFeedbackLoading = !!feedbackLoading[anime.mal_id];
-            const isInWatchlist = !!watchlistMap[anime.mal_id];
-            const isWatchlistLoading = !!watchlistLoading[anime.mal_id];
-
-            return (
-              <div key={anime.mal_id} className="border rounded p-3">
-                <div className="flex gap-4">
-                  <Link to={`/anime/${anime.mal_id}`} className="shrink-0">
-                    {anime.image_url ? (
-                      <img
-                        src={anime.image_url}
-                        alt={anime.title_english || anime.title}
-                        className="w-20 h-28 object-cover rounded"
-                      />
-                    ) : (
-                      <div className="w-20 h-28 border rounded flex items-center justify-center text-xs opacity-60">
-                        No Image
-                      </div>
-                    )}
-                  </Link>
-
-                  <div className="flex-1 min-w-0">
-                    <Link to={`/anime/${anime.mal_id}`}>
-                      <h2 className="font-semibold hover:underline">
-                        {anime.title_english || anime.title}
-                      </h2>
+              return (
+                <div key={anime.mal_id} className="foryou-card">
+                  <div className="flex gap-4">
+                    <Link
+                      to={`/anime/${anime.mal_id}`}
+                      className="shrink-0 foryou-link"
+                    >
+                      {anime.image_url ? (
+                        <img
+                          src={anime.image_url}
+                          alt={anime.title_english || anime.title}
+                          className="w-20 h-28 object-cover foryou-image"
+                        />
+                      ) : (
+                        <div className="w-20 h-28 border rounded flex items-center justify-center text-xs foryou-soft">
+                          No Image
+                        </div>
+                      )}
                     </Link>
 
-                    {anime.score && (
-                      <p className="text-sm opacity-70 mt-1">
-                        Score: {anime.score}
-                      </p>
-                    )}
-
-                    {anime.genres?.length > 0 && (
-                      <p className="text-sm opacity-70 mt-1">
-                        Genres:{" "}
-                        {anime.genres
-                          .map((genre) =>
-                            typeof genre === "string" ? genre : genre.name
-                          )
-                          .filter(Boolean)
-                          .slice(0, 3)
-                          .join(", ")}
-                      </p>
-                    )}
-
-                    <div className="flex gap-2 mt-3 flex-wrap">
-                      <button
-                        type="button"
-                        onClick={() => toggleWhyThis(anime.mal_id)}
-                        className="border rounded px-3 py-1 text-sm hover:bg-gray-100"
+                    <div className="flex-1 min-w-0">
+                      <Link
+                        to={`/anime/${anime.mal_id}`}
+                        className="foryou-link"
                       >
-                        {whyExpanded ? "Hide Why This" : "Why This?"}
-                      </button>
+                        <h2 className="font-semibold">
+                          {anime.title_english || anime.title}
+                        </h2>
+                      </Link>
 
-                      <button
-                        type="button"
-                        onClick={(e) => handleToggleWatchlist(e, anime)}
-                        disabled={isWatchlistLoading}
-                        className="border rounded px-3 py-1 text-sm hover:bg-gray-100 disabled:opacity-60"
-                      >
-                        {isWatchlistLoading
-                          ? "Updating..."
-                          : isInWatchlist
-                            ? "Remove from Watchlist"
-                            : "Add to Watchlist"}
-                      </button>
+                      {anime.score && (
+                        <p className="text-sm foryou-soft mt-1">
+                          Score: {anime.score}
+                        </p>
+                      )}
 
-                      <button
-                        type="button"
-                        onClick={(e) => handleNotInterested(e, anime)}
-                        disabled={isFeedbackLoading}
-                        className="border rounded px-3 py-1 text-sm hover:bg-gray-100 disabled:opacity-60"
-                      >
-                        {isFeedbackLoading ? "Saving..." : "Not Interested"}
-                      </button>
-                    </div>
+                      {anime.genres?.length > 0 && (
+                        <p className="text-sm foryou-soft mt-1">
+                          Genres:{" "}
+                          {anime.genres
+                            .map((genre) =>
+                              typeof genre === "string" ? genre : genre.name
+                            )
+                            .filter(Boolean)
+                            .slice(0, 3)
+                            .join(", ")}
+                        </p>
+                      )}
 
-                    {whyExpanded && (
-                      <div className="mt-3 text-sm">
-                        {anime.explanation?.length ? (
-                          <ul className="list-disc ml-5 space-y-1">
-                            {anime.explanation.map((line, index) => (
-                              <li key={index}>{line}</li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="opacity-70">
-                            This was recommended based on your saved preferences.
-                          </p>
-                        )}
+                      <div className="flex gap-2 mt-3 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => toggleWhyThis(anime.mal_id)}
+                          className="foryou-button text-sm"
+                        >
+                          {whyExpanded ? "Hide Why This" : "Why This?"}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(e) => handleToggleWatchlist(e, anime)}
+                          disabled={isWatchlistLoading}
+                          className="foryou-button text-sm"
+                        >
+                          {isWatchlistLoading
+                            ? "Updating..."
+                            : isInWatchlist
+                              ? "Remove from Watchlist"
+                              : "Add to Watchlist"}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(e) => handleNotInterested(e, anime)}
+                          disabled={isFeedbackLoading}
+                          className="foryou-button text-sm"
+                        >
+                          {isFeedbackLoading ? "Saving..." : "Not Interested"}
+                        </button>
                       </div>
-                    )}
 
-                    {anime.synopsis && (
-                      <p className="text-sm mt-3">
-                        {anime.synopsis.length > 400
-                          ? `${anime.synopsis.slice(0, 400)}...`
-                          : anime.synopsis}
-                      </p>
-                    )}
+                      {whyExpanded && (
+                        <div className="foryou-why text-sm">
+                          {anime.explanation?.length ? (
+                            <ul className="list-disc ml-5 space-y-1">
+                              {anime.explanation.map((line, index) => (
+                                <li key={index}>{line}</li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="foryou-soft">
+                              This was recommended based on your saved
+                              preferences.
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {anime.synopsis && (
+                        <p className="text-sm mt-3 foryou-muted">
+                          {anime.synopsis.length > 400
+                            ? `${anime.synopsis.slice(0, 400)}...`
+                            : anime.synopsis}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

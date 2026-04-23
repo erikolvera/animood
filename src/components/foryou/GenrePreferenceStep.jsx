@@ -52,10 +52,10 @@ function GenrePreferenceStep({
   }
 
   return (
-    <div className="border rounded-2xl p-6 space-y-6">
+    <div className="foryou-panel space-y-6">
       <div>
         <h2 className="text-xl font-bold mb-2">Pick genres you like</h2>
-        <p className="text-sm opacity-80">
+        <p className="text-sm foryou-muted">
           Choose a few genres you enjoy, and optionally mark genres you’re less
           interested in.
         </p>
@@ -74,8 +74,8 @@ function GenrePreferenceStep({
                 onClick={() => toggleLikedGenre(genre)}
                 className={`px-4 py-2 rounded-full border text-sm transition-colors ${
                   isSelected
-                    ? "bg-green-100 border-green-400"
-                    : "hover:bg-gray-100"
+                    ? "bg-violet-500/25 border-violet-300 text-white shadow-[0_0_16px_rgba(139,92,246,0.18)]"
+                    : "foryou-button"
                 }`}
               >
                 {genre}
@@ -98,8 +98,8 @@ function GenrePreferenceStep({
                 onClick={() => toggleDislikedGenre(genre)}
                 className={`px-4 py-2 rounded-full border text-sm transition-colors ${
                   isSelected
-                    ? "bg-red-100 border-red-400"
-                    : "hover:bg-gray-100"
+                    ? "bg-fuchsia-900/35 border-fuchsia-300 text-white shadow-[0_0_16px_rgba(217,70,239,0.15)]"
+                    : "foryou-button"
                 }`}
               >
                 {genre}
@@ -113,7 +113,7 @@ function GenrePreferenceStep({
         <button
           type="button"
           onClick={onBack}
-          className="border rounded px-4 py-2 hover:bg-gray-100"
+          className="foryou-button"
         >
           Back
         </button>
@@ -122,7 +122,7 @@ function GenrePreferenceStep({
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="border rounded px-4 py-2 hover:bg-gray-100 disabled:opacity-60"
+          className="foryou-button foryou-button-primary"
         >
           {saving ? "Saving..." : "Save and Continue"}
         </button>
@@ -130,7 +130,7 @@ function GenrePreferenceStep({
         <button
           type="button"
           onClick={onSkip}
-          className="border rounded px-4 py-2 hover:bg-gray-100"
+          className="foryou-button"
         >
           Skip for now
         </button>

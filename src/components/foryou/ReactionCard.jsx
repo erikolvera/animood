@@ -29,10 +29,10 @@ function ReactionCard({
   const genres = getGenres(anime);
 
   return (
-    <div className="border rounded-2xl p-4 flex flex-col gap-4">
+    <div className="foryou-card flex flex-col gap-4">
       <div className="flex gap-4">
         <div className="w-24 shrink-0">
-          <div className="aspect-[3/4] rounded-xl overflow-hidden border">
+          <div className="aspect-[3/4] rounded-xl overflow-hidden border foryou-image">
             {imageUrl ? (
               <img
                 src={imageUrl}
@@ -40,7 +40,7 @@ function ReactionCard({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-xs opacity-60">
+              <div className="w-full h-full flex items-center justify-center text-xs foryou-soft">
                 No Image
               </div>
             )}
@@ -49,33 +49,35 @@ function ReactionCard({
 
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-3">
-            <h3 className="font-bold text-lg leading-tight">{anime.title_english || anime.title}</h3>
+            <h3 className="font-bold text-lg leading-tight text-white">
+              {anime.title_english || anime.title}
+            </h3>
 
             <Link
               to={`/anime/${anime.mal_id}`}
-              className="text-sm underline shrink-0"
+              className="text-sm underline shrink-0 foryou-link"
             >
               View Details
             </Link>
           </div>
 
           <div className="flex gap-2 items-center mt-2 flex-wrap">
-            <span className="text-xs font-medium border px-2 py-0.5 rounded">
+            <span className="text-xs font-medium border px-2 py-0.5 rounded foryou-chip">
               {anime.type || "TV"}
             </span>
-            <span className="text-xs">
+            <span className="text-xs foryou-soft">
               ★ {anime.score || "N/A"}
             </span>
           </div>
 
           {genres.length > 0 && (
-            <p className="text-sm opacity-80 mt-2">
+            <p className="text-sm foryou-soft mt-2">
               Genres: {genres.slice(0, 3).join(", ")}
             </p>
           )}
 
           {anime.synopsis && (
-            <p className="text-sm mt-3 opacity-90">
+            <p className="text-sm mt-3 foryou-muted">
               {anime.synopsis.length > 400
                 ? `${anime.synopsis.slice(0, 400)}...`
                 : anime.synopsis}
@@ -89,7 +91,7 @@ function ReactionCard({
           type="button"
           onClick={() => onLike(anime)}
           disabled={loading}
-          className="border rounded px-4 py-2 hover:bg-gray-100 disabled:opacity-60"
+          className="foryou-button foryou-button-primary"
         >
           I’d like this
         </button>
@@ -98,7 +100,7 @@ function ReactionCard({
           type="button"
           onClick={() => onUnsure(anime)}
           disabled={loading}
-          className="border rounded px-4 py-2 hover:bg-gray-100 disabled:opacity-60"
+          className="foryou-button"
         >
           Not sure
         </button>
@@ -107,7 +109,7 @@ function ReactionCard({
           type="button"
           onClick={() => onDislike(anime)}
           disabled={loading}
-          className="border rounded px-4 py-2 hover:bg-gray-100 disabled:opacity-60"
+          className="foryou-button"
         >
           Not for me
         </button>
