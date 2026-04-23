@@ -16,6 +16,7 @@ import Navbar from './components/NavBar'
 import ExplorePage from "./Pages/ExplorePage";
 import ForYouPage from "./Pages/ForYouPage";
 
+import DiscussionBoard from './Pages/DiscussionBoard'
 
 function App() {
   const [user, setUser] = useState(null)
@@ -61,6 +62,8 @@ function App() {
         <Route path="/explore" element={<ExplorePage />} />
         <Route path="/profile" element={user ? <ProfilePage /> : <Navigate to="/signin" />} />
         <Route path="/foryou" element={<ForYouPage />} />
+        <Route path="/discussions" element={<DiscussionBoard />} />
+        <Route path="/anime/:id/discussions" element={<DiscussionBoard />} />
       </Routes>
     </div>
 
