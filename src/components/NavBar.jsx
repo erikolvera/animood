@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { searchAnime } from "../services/jikanApi";
 import { supabase } from '../supabaseClient';
+// import MoodBot from './explore/MoodBot';
+import MoodBot from './explore/MoodBot';
 
 const NavBar = () => {
     const navigate = useNavigate();
@@ -90,6 +92,12 @@ const NavBar = () => {
                     >
                         Explore
                     </NavLink>
+                    <NavLink
+                        to="/discussions"
+                        className={({ isActive }) => `text-sm pb-1 transition-colors ${isActive ? "font-bold text-[#b6353a] border-b-2 border-[#b6353a]" : "font-medium text-stone-600 hover:text-[#b6353a]"}`}
+                    >
+                        Discussions
+                    </NavLink>
                     {/* <NavLink
                         to="/placeholder"
                         className={({ isActive }) => `text-sm pb-1 transition-colors ${isActive ? "font-bold text-[#b6353a] border-b-2 border-[#b6353a]" : "font-medium text-stone-600 hover:text-[#b6353a]"}`}
@@ -152,6 +160,12 @@ const NavBar = () => {
                             </div>
                         )}
                     </div>
+                    {/* <button className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 p-[2px]">
+                        <div className="flex h-full w-full items-center justify-center rounded-full bg-[#fefcf4] px-2 py-0.5 text-sm text-black">
+                            MoodBot
+                        </div>
+                    </button> */}
+                    <MoodBot />
                     <Link to="/profile">
                         <div className="w-8 h-8 rounded-full bg-stone-200 overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#b6353a] transition-all">
                             <img
