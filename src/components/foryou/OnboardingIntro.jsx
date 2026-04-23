@@ -8,18 +8,18 @@ function OnboardingIntro({
 }) {
   return (
     <div className="space-y-6">
-      <div className="border rounded-2xl p-6">
+      <div className="foryou-panel">
         <h1 className="text-2xl font-bold mb-2">
           Let’s personalize your recommendations
         </h1>
 
-        <p className="text-sm opacity-80">
+        <p className="text-sm foryou-muted">
           We’ll use your favorites and a few quick preferences to build better
           recommendations for you.
         </p>
 
         {totalSignals > 0 && (
-          <p className="text-sm mt-2 opacity-70">
+          <p className="text-sm mt-2 foryou-soft">
             We found some existing preference data, but a little more will help
             us improve your results.
           </p>
@@ -27,19 +27,19 @@ function OnboardingIntro({
       </div>
 
       {profileFavorites.length > 0 && (
-        <div className="border rounded-2xl p-6">
+        <div className="foryou-panel">
           <h2 className="text-lg font-semibold mb-3">
             We found favorites on your profile
           </h2>
 
-          <p className="text-sm opacity-80 mb-4">
+          <p className="text-sm foryou-muted mb-4">
             We’ll use these as part of your recommendation profile.
           </p>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {profileFavorites.map((anime) => (
               <div key={anime.mal_id} className="flex flex-col gap-2">
-                <div className="rounded-xl overflow-hidden border aspect-[3/4]">
+                <div className="rounded-xl overflow-hidden border aspect-[3/4] foryou-image">
                   {anime.image_url ? (
                     <img
                       src={anime.image_url}
@@ -47,13 +47,13 @@ function OnboardingIntro({
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-xs opacity-60">
+                    <div className="w-full h-full flex items-center justify-center text-xs foryou-soft">
                       No Image
                     </div>
                   )}
                 </div>
 
-                <p className="text-sm font-medium line-clamp-2">
+                <p className="text-sm font-medium line-clamp-2 foryou-muted">
                   {anime.title_english || anime.title}
                 </p>
               </div>
@@ -61,16 +61,16 @@ function OnboardingIntro({
           </div>
 
           <div className="mt-4">
-            <Link to="/profile" className="text-sm underline">
+            <Link to="/profile" className="text-sm underline foryou-link">
               Edit favorites in profile
             </Link>
           </div>
         </div>
       )}
 
-      <div className="border rounded-2xl p-6">
+      <div className="foryou-panel">
         <h2 className="text-lg font-semibold mb-2">Ready to continue?</h2>
-        <p className="text-sm opacity-80 mb-4">
+        <p className="text-sm foryou-muted mb-4">
           Next, we’ll ask for a few quick preferences to improve your starter
           recommendations.
         </p>
@@ -79,7 +79,7 @@ function OnboardingIntro({
           <button
             type="button"
             onClick={onContinue}
-            className="border rounded px-4 py-2 hover:bg-gray-100"
+            className="foryou-button foryou-button-primary"
           >
             Continue
           </button>
@@ -87,7 +87,7 @@ function OnboardingIntro({
           <button
             type="button"
             onClick={onSkip}
-            className="border rounded px-4 py-2 hover:bg-gray-100"
+            className="foryou-button"
           >
             Skip for now
           </button>
