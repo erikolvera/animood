@@ -87,7 +87,7 @@ const LoginForm = () => {
           </Link>
         </div>
 
-        {/* 👇 Bottom Section */}
+        {/* Bottom Section */}
         <div className="flex flex-col items-center gap-2 mt-2">
           <Link
             to="/forgot-password"

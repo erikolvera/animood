@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
+import bgImage from "../assets/generalbackground.png"; // adjust path as needed
+
 
 export default function WatchList() {
   const [user, setUser] = useState(null);
@@ -98,61 +100,92 @@ export default function WatchList() {
   }
 
   return (
-    <div>
-      <h1>Watchlist</h1>
+    <div
+  className="min-h-screen w-full bg-center bg-cover bg-no-repeat bg-fixed py-10 px-6"
+  style={{ backgroundImage: `url(${bgImage})` }}
+>
+  <div className="max-w-5xl mx-auto bg-gray-800/90 rounded-2xl shadow-lg p-6 md:p-8">
+    <h1 className="text-3xl font-bold text-white text-center mb-6">
+      Watchlist
+    </h1>
 
-      {!user && <p>Login to See Watchlist</p>}
+    {!user && (
+      <p className="text-center text-white text-lg">
+        Login to See Watchlist
+      </p>
+    )}
 
-      {user && watchlist.length === 0 && (
-        <div>
-          <p>watchlist is empty.</p>
-          <Link to="/explore">
-            <button>Start Adding to Watchlist</button>
-          </Link>
-        </div>
-      )}
+    {user && watchlist.length === 0 && (
+      <div className="text-center">
+        <p className="text-white mb-4">Watchlist is empty.</p>
+        <Link to="/explore">
+          <button className="px-6 py-3 rounded-full bg-gray-300/90 hover:bg-gray-200 text-black font-semibold shadow-md transition">
+            Start Adding to Watchlist
+          </button>
+        </Link>
+      </div>
+    )}
 
+    <div className="flex flex-col gap-4">
       {watchlist.map((item) => (
-        <div key={item.id}>
-          <h2>{item.title}</h2>
-
+        <div
+          key={item.id}
+          className="flex flex-col md:flex-row gap-5 md:gap-6 bg-gray-700/70 rounded-xl p-4"
+        >
           {item.image_url && (
             <img
               src={item.image_url}
               alt={item.title}
-              width="180"
+              className="w-[140px] h-[200px] object-cover rounded-lg shadow-md flex-shrink-0 mx-auto md:mx-0"
             />
           )}
 
-          <p>ID: {item.anime_id}</p>
+          <div className="flex-1 flex flex-col justify-center text-left min-w-0">
+            <h2 className="text-white text-xl font-semibold mb-2">
+              {item.title}
+            </h2>
 
-          <p>
-            <Link to={`/anime/${item.anime_id}`}>View Details</Link>
-          </p>
+            <p className="text-gray-300 text-sm mb-2">
+              ID: {item.anime_id}
+            </p>
 
-          <label>Status: </label>
-          <select
-            value={item.status}
-            onChange={(e) => updateStatus(item.id, e.target.value)}
-            style={{ color: "black", backgroundColor: "white" }}
-          >
-            {statusOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            <p className="mb-3">
+              <Link
+                to={`/anime/${item.anime_id}`}
+                className="text-blue-300 hover:underline font-medium"
+              >
+                View Details
+              </Link>
+            </p>
 
-          <br />
-          <br />
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+              <label className="text-white font-medium">Status:</label>
+              <select
+                value={item.status}
+                onChange={(e) => updateStatus(item.id, e.target.value)}
+                className="text-black bg-white rounded-md px-3 py-2 outline-none"
+              >
+                {statusOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <button onClick={() => removeFromWatchlist(item.id)}>
-            Remove from Watchlist
-          </button>
-
-          <hr />
+            <div>
+              <button
+                onClick={() => removeFromWatchlist(item.id)}
+                className="px-5 py-2 rounded-full bg-red-400/90 hover:bg-red-300 text-black font-semibold shadow-md transition"
+              >
+                Remove from Watchlist
+              </button>
+            </div>
+          </div>
         </div>
       ))}
     </div>
+  </div>
+</div>
   );
 }

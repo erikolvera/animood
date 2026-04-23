@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import ExploreControls from "../components/explore/ExploreControls";
 import AnimeSection from "../components/explore/AnimeSection";
+import bgImage from "../assets/generalbackground.png"; // adjust path as needed
+
 
 const genreNames = {
   "1": "Action",
@@ -114,8 +116,13 @@ function ExplorePage() {
     text = `Browsing genres: ${selectedGenreNames.join(", ")}`;
   }
 
-  return (
-    <div className="max-w-[1440px] mx-auto px-8 py-8">
+ return (
+  <div
+    className="min-h-screen w-full bg-center bg-cover bg-no-repeat bg-fixed py-10"
+    style={{ backgroundImage: `url(${bgImage})` }}
+  >
+    <div className="max-w-[1440px] mx-auto px-8 py-8 bg-gray-800/90 rounded-2xl">
+      
       <ExploreControls
         selectedGenres={selectedGenres}
         onGenreToggle={handleGenreToggle}
@@ -124,8 +131,8 @@ function ExplorePage() {
       />
 
       <div className="mb-6">
-        <h1 className="text-3xl font-bold">{text}</h1>
-        <p className="text-sm opacity-70 mt-1">
+        <h1 className="text-3xl font-bold text-white">{text}</h1>
+        <p className="text-sm text-gray-300 mt-1">
           {animeList.length} result{animeList.length === 1 ? "" : "s"}
         </p>
       </div>
@@ -135,8 +142,9 @@ function ExplorePage() {
         error={error}
         animeList={animeList}
       />
-    </div>
-  );
-}
 
+    </div>
+  </div>
+);
+}
 export default ExplorePage;
