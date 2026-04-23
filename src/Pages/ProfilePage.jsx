@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import { searchAnime } from "../services/jikanApi";
 
-export default function ProfilePage() {
+export default function ProfilePage({ logout }) {
   const navigate = useNavigate();
 
   const [currentUser, setCurrentUser] = useState(null);
@@ -21,6 +21,11 @@ export default function ProfilePage() {
   const [animeSearchResults, setAnimeSearchResults] = useState([]);
   const [searchingAnime, setSearchingAnime] = useState(false);
   const [editFavorites, setEditFavorites] = useState([]);
+
+  const [showDelete, setShowDelete] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     async function loadProfile() {
@@ -134,6 +139,31 @@ export default function ProfilePage() {
     setEditFavorites(editFavorites.filter((a) => a.mal_id !== mal_id));
   }
 
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    logout();
+  }
+
+  async function handleDeleteAccount() {
+    setDeleteError("");
+    if (confirmText !== "confirm") {
+      setDeleteError('You must type "confirm" to delete your account.');
+      return;
+    }
+    setDeleteLoading(true);
+    try {
+      const { error } = await supabase.rpc("delete_my_account");
+      if (error) throw error;
+      await supabase.auth.signOut();
+      logout();
+      navigate("/signup");
+    } catch (err) {
+      setDeleteError(err.message);
+    } finally {
+      setDeleteLoading(false);
+    }
+  }
+
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen">
       <p className="text-stone-500">Loading profile...</p>
@@ -243,6 +273,50 @@ export default function ProfilePage() {
               ))}
             </div>
           )}
+        </section>
+
+        {/* Account */}
+        <section className="pt-6 border-t border-stone-700">
+          <h2 className="text-lg font-bold text-white mb-4 text-center">Account</h2>
+          <div className="flex flex-col items-center gap-4">
+            <button
+              onClick={handleLogout}
+              className="w-fit px-4 py-2 rounded-full border border-stone-600 text-stone-300 text-sm hover:bg-stone-700 transition-colors"
+            >
+              Log Out
+            </button>
+
+            {!showDelete ? (
+              <button
+                onClick={() => setShowDelete(true)}
+                className="w-fit text-sm text-red-400 hover:text-red-300 transition-colors"
+              >
+                Delete Account
+              </button>
+            ) : (
+              <div className="flex flex-col items-center gap-2 max-w-sm">
+                <p className="text-sm text-red-400 text-center">
+                  Type <b>confirm</b> to permanently delete your account.
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    placeholder='Type "confirm"'
+                    value={confirmText}
+                    onChange={(e) => setConfirmText(e.target.value)}
+                    className="border border-stone-600 bg-transparent rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500/30"
+                  />
+                  <button
+                    onClick={handleDeleteAccount}
+                    disabled={deleteLoading}
+                    className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+                  >
+                    {deleteLoading ? "Deleting..." : "Delete"}
+                  </button>
+                </div>
+                {deleteError && <p className="text-red-400 text-sm text-center">{deleteError}</p>}
+              </div>
+            )}
+          </div>
         </section>
       </div>
 
