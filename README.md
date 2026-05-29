@@ -5,7 +5,7 @@ app where you can search a huge catalog, build a personal watchlist, get recomme
 tuned to your taste, and — the centerpiece — chat with **MoodBot**, an AI assistant that
 turns a sentence about your mood into spot-on anime suggestions.
 
-Built by a four-person team for.
+Built by a four-person team.
 
 ---
 
