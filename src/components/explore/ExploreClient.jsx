@@ -1,8 +1,10 @@
+"use client";
+
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import ExploreControls from "../components/explore/ExploreControls";
-import AnimeSection from "../components/explore/AnimeSection";
-import bgImage from "../assets/generalbackground.png"; // adjust path as needed
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import ExploreControls from "./ExploreControls";
+import AnimeSection from "./AnimeSection";
+import bgImage from "@/assets/generalbackground.png";
 
 
 const genreNames = {
@@ -18,9 +20,12 @@ const genreNames = {
   "37": "Supernatural",
 };
 
-function ExplorePage() {
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+function ExploreClient() {
+  const router = useRouter();
+  const pathname = usePathname();
+  // Read-only in Next: URL updates go through router.push instead of a
+  // setSearchParams setter.
+  const searchParams = useSearchParams();
 
   const genresParam = searchParams.get("genres") || "";
   const selectedGenres = genresParam
@@ -98,6 +103,14 @@ function ExplorePage() {
     fetchExploreAnime();
   }, [selectedGenres.join(","), page]);
 
+  function updateGenresInUrl(genres) {
+    if (genres.length === 0) {
+      router.push(pathname);
+    } else {
+      router.push(`${pathname}?genres=${genres.join(",")}`);
+    }
+  }
+
   function handleGenreToggle(genreId) {
     const genreIdString = String(genreId);
 
@@ -109,15 +122,11 @@ function ExplorePage() {
       updatedGenres = [...selectedGenres, genreIdString];
     }
 
-    if (updatedGenres.length === 0) {
-      setSearchParams({});
-    } else {
-      setSearchParams({ genres: updatedGenres.join(",") });
-    }
+    updateGenresInUrl(updatedGenres);
   }
 
   function handleClearGenres() {
-    setSearchParams({});
+    updateGenresInUrl([]);
   }
 
   async function handleRandomAnime() {
@@ -132,7 +141,7 @@ function ExplorePage() {
       const randomAnime = data.data;
 
       if (randomAnime?.mal_id) {
-        navigate(`/anime/${randomAnime.mal_id}`);
+        router.push(`/anime/${randomAnime.mal_id}`);
       }
     } catch (err) {
       alert(err.message);
@@ -157,10 +166,10 @@ function ExplorePage() {
  return (
   <div
     className="min-h-screen w-full bg-center bg-cover bg-no-repeat bg-fixed py-10"
-    style={{ backgroundImage: `url(${bgImage})` }}
+    style={{ backgroundImage: `url(${bgImage.src})` }}
   >
     <div className="max-w-[1440px] mx-auto px-8 py-8 bg-gray-800/90 rounded-2xl">
-      
+
       <ExploreControls
         selectedGenres={selectedGenres}
         onGenreToggle={handleGenreToggle}
@@ -185,4 +194,4 @@ function ExplorePage() {
   </div>
 );
 }
-export default ExplorePage;
+export default ExploreClient;

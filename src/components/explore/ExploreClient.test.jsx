@@ -1,28 +1,23 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { vi } from "vitest";
-import ExplorePage from "./ExplorePage";
+import ExploreClient from "./ExploreClient";
 
-const mockNavigate = vi.fn();
+// With react-router's MemoryRouter, clicking a genre really changed the
+// in-memory URL and re-rendered. With next/navigation mocked, the URL is
+// a test INPUT (mocks.searchParams) and navigation is a test OUTPUT
+// (mocks.push) — so tests assert either "URL in → UI out" or
+// "interaction → push out".
+const mocks = vi.hoisted(() => ({
+  push: vi.fn(),
+  searchParams: new URLSearchParams(""),
+}));
 
-vi.mock("react-router-dom", async () => {
-  const actual = await vi.importActual("react-router-dom");
-  return {
-    ...actual,
-    useNavigate: () => mockNavigate,
-  };
-});
-
-function renderExplore(initialEntry = "/explore") {
-  return render(
-    <MemoryRouter initialEntries={[initialEntry]}>
-      <Routes>
-        <Route path="/explore" element={<ExplorePage />} />
-      </Routes>
-    </MemoryRouter>
-  );
-}
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: mocks.push }),
+  usePathname: () => "/explore",
+  useSearchParams: () => mocks.searchParams,
+}));
 
 function mockFetchResponse(data, ok = true) {
   return Promise.resolve({
@@ -31,19 +26,26 @@ function mockFetchResponse(data, ok = true) {
   });
 }
 
-describe("ExplorePage", () => {
+describe("ExploreClient", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.searchParams = new URLSearchParams("");
     global.fetch = vi.fn();
     window.alert = vi.fn();
   });
 
-  test("Search by genre", async () => {
+  test("selecting a genre pushes it into the URL", async () => {
     fetch.mockResolvedValueOnce(mockFetchResponse([])); // initial top anime fetch
-    renderExplore();
+    render(<ExploreClient />);
 
     const actionButton = await screen.findByRole("button", { name: "Action" });
+    await userEvent.click(actionButton);
 
+    expect(mocks.push).toHaveBeenCalledWith("/explore?genres=1");
+  });
+
+  test("renders genre results for genres in the URL", async () => {
+    mocks.searchParams = new URLSearchParams("genres=1");
     fetch.mockResolvedValueOnce(mockFetchResponse([
       {
         mal_id: 1,
@@ -54,7 +56,7 @@ describe("ExplorePage", () => {
       },
     ]));
 
-    await userEvent.click(actionButton);
+    render(<ExploreClient />);
 
     await waitFor(() => {
       expect(fetch).toHaveBeenLastCalledWith(
@@ -65,18 +67,23 @@ describe("ExplorePage", () => {
     expect(await screen.findByText(/Browsing genres: Action/i)).toBeInTheDocument();
   });
 
-  test("Search by multiple genres", async () => {
-    fetch.mockResolvedValueOnce(mockFetchResponse([])); // initial top anime fetch
-    renderExplore();
+  test("selecting a second genre appends it to the URL", async () => {
+    mocks.searchParams = new URLSearchParams("genres=1");
+    fetch.mockResolvedValueOnce(mockFetchResponse([]));
 
-    const actionButton = await screen.findByRole("button", { name: "Action" });
+    render(<ExploreClient />);
+
     const comedyButton = await screen.findByRole("button", { name: "Comedy" });
-
-    fetch.mockResolvedValueOnce(mockFetchResponse([])); // after Action
-    await userEvent.click(actionButton);
-
-    fetch.mockResolvedValueOnce(mockFetchResponse([])); // after Comedy
     await userEvent.click(comedyButton);
+
+    expect(mocks.push).toHaveBeenCalledWith("/explore?genres=1,4");
+  });
+
+  test("renders results for multiple genres in the URL", async () => {
+    mocks.searchParams = new URLSearchParams("genres=1,4");
+    fetch.mockResolvedValueOnce(mockFetchResponse([]));
+
+    render(<ExploreClient />);
 
     await waitFor(() => {
       expect(fetch).toHaveBeenLastCalledWith(
@@ -90,11 +97,7 @@ describe("ExplorePage", () => {
   });
 
   test("Genre results contain relevant anime", async () => {
-    fetch.mockResolvedValueOnce(mockFetchResponse([])); // initial top anime fetch
-    renderExplore();
-
-    const actionButton = await screen.findByRole("button", { name: "Action" });
-
+    mocks.searchParams = new URLSearchParams("genres=1");
     fetch.mockResolvedValueOnce(mockFetchResponse([
       {
         mal_id: 10,
@@ -105,23 +108,25 @@ describe("ExplorePage", () => {
       },
     ]));
 
-    await userEvent.click(actionButton);
+    render(<ExploreClient />);
 
     expect(await screen.findByText("Attack on Titan")).toBeInTheDocument();
     expect(screen.getByText("★ 9")).toBeInTheDocument();
   });
 
-  test("Clear genre search", async () => {
-    fetch.mockResolvedValueOnce(mockFetchResponse([])); // initial top anime fetch
-    renderExplore();
+  test("clearing genres pushes the bare pathname", async () => {
+    mocks.searchParams = new URLSearchParams("genres=1");
+    fetch.mockResolvedValueOnce(mockFetchResponse([]));
 
-    const actionButton = await screen.findByRole("button", { name: "Action" });
-
-    fetch.mockResolvedValueOnce(mockFetchResponse([])); // fetch after selecting Action
-    await userEvent.click(actionButton);
+    render(<ExploreClient />);
 
     const clearButton = await screen.findByTitle("Clear all genres");
+    await userEvent.click(clearButton);
 
+    expect(mocks.push).toHaveBeenCalledWith("/explore");
+  });
+
+  test("shows trending anime when no genres are selected", async () => {
     fetch.mockResolvedValueOnce(mockFetchResponse([
       {
         mal_id: 99,
@@ -132,7 +137,7 @@ describe("ExplorePage", () => {
       },
     ]));
 
-    await userEvent.click(clearButton);
+    render(<ExploreClient />);
 
     await waitFor(() => {
       expect(fetch).toHaveBeenLastCalledWith(
@@ -144,9 +149,10 @@ describe("ExplorePage", () => {
   });
 
   test("Invalid/unavailable genre selection", async () => {
-    fetch.mockResolvedValueOnce(mockFetchResponse([])); // fetch for invalid genre from URL
+    mocks.searchParams = new URLSearchParams("genres=999");
+    fetch.mockResolvedValueOnce(mockFetchResponse([]));
 
-    renderExplore("/explore?genres=999");
+    render(<ExploreClient />);
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
@@ -159,7 +165,7 @@ describe("ExplorePage", () => {
 
   test("Surprise Me button navigates correctly", async () => {
     fetch.mockResolvedValueOnce(mockFetchResponse([])); // initial top anime fetch
-    renderExplore();
+    render(<ExploreClient />);
 
     const surpriseButton = await screen.findByRole("button", { name: /Surprise Me/i });
 
@@ -173,13 +179,13 @@ describe("ExplorePage", () => {
 
     await waitFor(() => {
       expect(fetch).toHaveBeenLastCalledWith("https://api.jikan.moe/v4/random/anime");
-      expect(mockNavigate).toHaveBeenCalledWith("/anime/777");
+      expect(mocks.push).toHaveBeenCalledWith("/anime/777");
     });
   });
 
   test("Surprise Me returns a valid anime each time", async () => {
     fetch.mockResolvedValueOnce(mockFetchResponse([])); // initial top anime fetch
-    renderExplore();
+    render(<ExploreClient />);
 
     const surpriseButton = await screen.findByRole("button", { name: /Surprise Me/i });
 
@@ -199,14 +205,14 @@ describe("ExplorePage", () => {
     await userEvent.click(surpriseButton);
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenNthCalledWith(1, "/anime/101");
-      expect(mockNavigate).toHaveBeenNthCalledWith(2, "/anime/202");
+      expect(mocks.push).toHaveBeenNthCalledWith(1, "/anime/101");
+      expect(mocks.push).toHaveBeenNthCalledWith(2, "/anime/202");
     });
   });
 
   test("Surprise Me handles API failure", async () => {
     fetch.mockResolvedValueOnce(mockFetchResponse([])); // initial top anime fetch
-    renderExplore();
+    render(<ExploreClient />);
 
     const surpriseButton = await screen.findByRole("button", { name: /Surprise Me/i });
 
@@ -221,6 +227,6 @@ describe("ExplorePage", () => {
       expect(window.alert).toHaveBeenCalledWith("Failed to fetch a random anime.");
     });
 
-    expect(mockNavigate).not.toHaveBeenCalled();
+    expect(mocks.push).not.toHaveBeenCalled();
   });
 });
