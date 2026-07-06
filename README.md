@@ -1,30 +1,28 @@
-# AniMood 🎐
+# AniMood
 
 **Find your next anime by how you feel.** AniMood is a full-stack anime discovery web
 app where you can search a huge catalog, build a personal watchlist, get recommendations
 tuned to your taste, and — the centerpiece — chat with **MoodBot**, an AI assistant that
 turns a sentence about your mood into spot-on anime suggestions.
 
-Built by a four-person team for **CS 4398**.
-
-🔗 **Live demo:** _add deployment URL_  ·  📺 **Demo video:** _add link_
+Built by a four-person team.
 
 ---
 
 ## Features
 
-- **🤖 MoodBot — AI mood-based recommendations.** Tell the chatbot how you're feeling
+- **MoodBot — AI mood-based recommendations.** Tell the chatbot how you're feeling
   ("I had a rough week and want something cozy") and it replies with an empathetic message
   plus three hand-picked anime. Powered by **Google Gemini**, which interprets the mood and
   maps it to genres that drive a live catalog query.
-- **🔍 Global search with autocomplete.** A persistent navbar searches the full anime
+- **Global search with autocomplete.** A persistent navbar searches the full anime
   catalog with type-ahead suggestions and a dedicated results page.
-- **✨ Personalized "For You" feed.** A short onboarding flow lets you react to sample
+- **Personalized "For You" feed.** A short onboarding flow lets you react to sample
   titles to train your profile; a scoring engine then ranks recommendations and explains
   *why* each was chosen, with a "not interested" control to refine results.
-- **📺 Watchlist.** Save anime to a personal list and manage it across sessions.
-- **📄 Anime detail pages.** Rich info per title, sourced from the Jikan/MyAnimeList API.
-- **🔐 Accounts & profiles.** Email/password auth (sign up, sign in/out, password reset)
+- **Watchlist.** Save anime to a personal list and manage it across sessions.
+- **Anime detail pages.** Rich info per title, sourced from the Jikan/MyAnimeList API.
+- **Accounts & profiles.** Email/password auth (sign up, sign in/out, password reset)
   with session persistence, a profile page, and account deletion.
 
 ## Tech stack
@@ -147,6 +145,6 @@ supabase/
 
 ## Team
 
-A four-person CS 4398 group project. Contributions span authentication, anime search and
+A four person project. Contributions span authentication, anime search and
 discovery, the recommendation engine, the MoodBot AI assistant, watchlist, and profile
 management.
