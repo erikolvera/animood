@@ -1,9 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
-import bgImage from "../assets/homepage.png"; // adjust path if needed
+import bgImage from "../assets/homepage.png";
 
 
 function Dashboard({ logout }) {
+  const navigate = useNavigate();
   async function handleLogout() {
     await supabase.auth.signOut();
     alert("Logout successful!");
