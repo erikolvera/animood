@@ -1,6 +1,5 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { vi } from "vitest";
-import { MemoryRouter } from "react-router-dom";
 import MoodBot from "./MoodBot";
 
 // Mock the AI service
@@ -41,12 +40,7 @@ describe("MoodBot", () => {
     }));
   });
 
-  const renderMoodBot = () =>
-    render(
-      <MemoryRouter>
-        <MoodBot />
-      </MemoryRouter>
-    );
+  const renderMoodBot = () => render(<MoodBot />);
 
   test("Successfully open the MoodBot side panel", () => {
     renderMoodBot();
