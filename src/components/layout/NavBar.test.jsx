@@ -1,6 +1,5 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
 import { vi } from "vitest";
 import NavBar from "./NavBar";
 import { searchAnime } from "../../services/jikanApi";
@@ -9,21 +8,24 @@ vi.mock("../../services/jikanApi", () => ({
     searchAnime: vi.fn(),
 }));
 
-const mockNavigate = vi.fn();
-vi.mock("react-router-dom", async () => {
-    const actual = await vi.importActual("react-router-dom");
-    return {
-        ...actual,
-        useNavigate: () => mockNavigate,
-    };
-});
+const mocks = vi.hoisted(() => ({
+    push: vi.fn(),
+}));
 
-const renderNavBar = () =>
-    render(
-        <MemoryRouter>
-            <NavBar />
-        </MemoryRouter>
-    );
+vi.mock("next/navigation", () => ({
+    useRouter: () => ({ push: mocks.push }),
+    usePathname: () => "/dashboard",
+}));
+
+vi.mock("@/lib/supabase/client", () => ({
+    createClient: () => ({
+        auth: {
+            getUser: vi.fn().mockResolvedValue({ data: { user: null } }),
+        },
+    }),
+}));
+
+const renderNavBar = () => render(<NavBar />);
 
 describe("NavBar Global Search", () => {
     beforeEach(() => {
@@ -76,7 +78,7 @@ describe("NavBar Global Search", () => {
 
         fireEvent.keyDown(searchInput, { key: "Enter", code: "Enter" });
 
-        expect(mockNavigate).toHaveBeenCalledWith("/search?q=Attack%20on%20Titan");
+        expect(mocks.push).toHaveBeenCalledWith("/search?q=Attack%20on%20Titan");
         expect(searchInput.value).toBe("");
     });
 
@@ -88,7 +90,7 @@ describe("NavBar Global Search", () => {
 
         fireEvent.keyDown(searchInput, { key: "Enter", code: "Enter" });
 
-        expect(mockNavigate).not.toHaveBeenCalled();
+        expect(mocks.push).not.toHaveBeenCalled();
         expect(searchAnime).not.toHaveBeenCalled();
     });
 });

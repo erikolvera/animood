@@ -1,16 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { NavLink, Link, useNavigate } from 'react-router-dom';
+"use client";
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
 import { searchAnime } from "../../services/jikanApi";
-import { supabase } from '../../supabaseClient';
-// import MoodBot from '../explore/MoodBot';
+import { createClient } from "@/lib/supabase/client";
 import MoodBot from '../explore/MoodBot';
 
 const NavBar = () => {
-    const navigate = useNavigate();
+    const router = useRouter();
+    const pathname = usePathname();
+    const supabase = createClient();
     const [query, setQuery] = useState("");
     const [animeResults, setAnimeResults] = useState([]);
     const [searchLoading, setSearchLoading] = useState(false);
     const [searchError, setSearchError] = useState("");
+
+    // react-router's NavLink gave us isActive; in Next we compare the
+    // current pathname against the link target instead.
+    const navLinkClass = (href) =>
+        `text-sm pb-1 transition-colors ${pathname === href ? "font-bold text-[#b6353a] border-b-2 border-[#b6353a]" : "font-medium text-stone-600 hover:text-[#b6353a]"}`;
 
     useEffect(() => {
         const delay = setTimeout(() => {
@@ -51,13 +60,14 @@ const NavBar = () => {
             if (data?.avatar_url) setAvatarUrl(data.avatar_url);
         }
         fetchAvatar();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleKeyDown = (e) => {
         if (e.key === 'Enter' && query.trim() !== '') {
             const searchQuery = query.trim();
             setQuery(""); // Clear the input to close the dropdown
-            navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+            router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
         }
     };
 
@@ -72,36 +82,21 @@ const NavBar = () => {
 
                 {/* Navigation Links */}
                 <div className="flex items-center gap-4">
-                    <NavLink
-                        to="/dashboard"
-                        className={({ isActive }) => `text-sm pb-1 transition-colors ${isActive ? "font-bold text-[#b6353a] border-b-2 border-[#b6353a]" : "font-medium text-stone-600 hover:text-[#b6353a]"}`}
-                    >
+                    <Link href="/dashboard" className={navLinkClass("/dashboard")}>
                         Home
-                    </NavLink>
-                    <NavLink
-                        to="/watchlist"
-                        className={({ isActive }) => `text-sm pb-1 transition-colors ${isActive ? "font-bold text-[#b6353a] border-b-2 border-[#b6353a]" : "font-medium text-stone-600 hover:text-[#b6353a]"}`}
-                    >
+                    </Link>
+                    <Link href="/watchlist" className={navLinkClass("/watchlist")}>
                         Watchlist
-                    </NavLink>
-                    <NavLink
-                        to="/explore"
-                        className={({ isActive }) => `text-sm pb-1 transition-colors ${isActive ? "font-bold text-[#b6353a] border-b-2 border-[#b6353a]" : "font-medium text-stone-600 hover:text-[#b6353a]"}`}
-                    >
+                    </Link>
+                    <Link href="/explore" className={navLinkClass("/explore")}>
                         Explore
-                    </NavLink>
-                    <NavLink
-                        to="/discussions"
-                        className={({ isActive }) => `text-sm pb-1 transition-colors ${isActive ? "font-bold text-[#b6353a] border-b-2 border-[#b6353a]" : "font-medium text-stone-600 hover:text-[#b6353a]"}`}
-                    >
+                    </Link>
+                    <Link href="/discussions" className={navLinkClass("/discussions")}>
                         Discussions
-                    </NavLink>
-                    <NavLink
-                        to="/foryou"
-                        className={({ isActive }) => `text-sm pb-1 transition-colors ${isActive ? "font-bold text-[#b6353a] border-b-2 border-[#b6353a]" : "font-medium text-stone-600 hover:text-[#b6353a]"}`}
-                    >
+                    </Link>
+                    <Link href="/foryou" className={navLinkClass("/foryou")}>
                         For You
-                    </NavLink>
+                    </Link>
                 </div>
 
                 {/* Action Icons & Profile */}
@@ -138,7 +133,7 @@ const NavBar = () => {
                                         {animeResults.map((anime) => (
                                             <Link
                                                 key={anime.mal_id}
-                                                to={`/anime/${anime.mal_id}`}
+                                                href={`/anime/${anime.mal_id}`}
                                                 onClick={() => setQuery('')}
                                                 className="flex gap-3 p-3 hover:bg-stone-50 transition-colors border-b border-stone-100 last:border-0"
                                             >
@@ -158,19 +153,18 @@ const NavBar = () => {
                             </div>
                         )}
                     </div>
-                    {/* <button className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 p-[2px]">
-                        <div className="flex h-full w-full items-center justify-center rounded-full bg-[#fefcf4] px-2 py-0.5 text-sm text-black">
-                            MoodBot
-                        </div>
-                    </button> */}
                     <MoodBot />
-                    <Link to="/profile">
+                    <Link href="/profile">
                         <div className="w-8 h-8 rounded-full bg-stone-200 overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#b6353a] transition-all">
-                            <img
-                                src={avatarUrl}
-                                alt="User profile"
-                                className="w-full h-full object-cover"
-                            />
+                            {avatarUrl ? (
+                                <img
+                                    src={avatarUrl}
+                                    alt="User profile"
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <div className="w-full h-full" aria-label="User profile" />
+                            )}
                         </div>
                     </Link>
                 </div>
