@@ -1,15 +1,18 @@
+"use client";
+
 import { useState } from "react";
-import { supabase } from "../../supabaseClient";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 const ResetPassword = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const navigate = useNavigate();
+  const router = useRouter();
+  const supabase = createClient();
 
-  const handleUpdate = async (e) => {
+  const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
     setMessage("");
@@ -28,7 +31,7 @@ const ResetPassword = () => {
       setError(error.message);
     } else {
       setMessage("Password updated successfully!");
-      setTimeout(() => navigate("/login"), 2000);
+      setTimeout(() => router.push("/signin"), 2000);
     }
   };
 
@@ -45,7 +48,7 @@ const ResetPassword = () => {
             onChange={(e) => setPassword(e.target.value)}
             className="border w-full mb-3 p-2 rounded bg-black text-white placeholder-white"
           />
-          
+
           <input
             placeholder="Confirm New Password"
             type="password"

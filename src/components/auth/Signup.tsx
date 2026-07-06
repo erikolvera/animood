@@ -1,8 +1,9 @@
-import { useState } from "react";
-import { supabase } from "../../supabaseClient";
-import { Link } from "react-router-dom";
-import bgImage from "../../assets/signinAnimood2.png"; // adjust path as needed
+"use client";
 
+import { useState } from "react";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import bgImage from "@/assets/signinAnimood2.png";
 
 const Signup = () => {
   const [email, setEmail] = useState("");
@@ -11,8 +12,9 @@ const Signup = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const supabase = createClient();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
 
@@ -55,14 +57,14 @@ const Signup = () => {
   return (
    <div
       className="min-h-screen w-full bg-center bg-cover bg-no-repeat flex items-center justify-center px-4"
-      style={{ backgroundImage: `url(${bgImage})` }}
+      style={{ backgroundImage: `url(${bgImage.src})` }}
     >
       <div className="w-full max-w-md">
         <form
           onSubmit={handleSubmit}
           className="w-full mx-auto flex flex-col items-center"
         >
-          
+
 
           {/* Form container */}
           <div className="w-full flex flex-col gap-6 mt-30 text-center mb-3">
@@ -115,7 +117,7 @@ const Signup = () => {
               </button>
 
               <Link
-                to="/signin"
+                href="/signin"
                 className="min-w-[190px] text-center bg-gray-300/90 hover:bg-gray-200 text-black font-semibold py-3 px-6 rounded-full shadow-md transition"
               >
                 Sign In
@@ -123,7 +125,7 @@ const Signup = () => {
             </div>
 
             <p>
-            Already have an account? <Link to="/signin" className="text-blue-300 hover:underline">Sign in!</Link>
+            Already have an account? <Link href="/signin" className="text-blue-300 hover:underline">Sign in!</Link>
             </p>
 
           </div>

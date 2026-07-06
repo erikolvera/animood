@@ -1,19 +1,24 @@
+"use client";
+
 import { useState } from "react";
-import { supabase } from "../../supabaseClient";
-import { Link } from "react-router-dom";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const supabase = createClient();
 
-  const handleReset = async (e) => {
+  const handleReset = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
     setMessage("");
 
+    // The email template appends token_hash + type and forwards through
+    // /auth/confirm, which exchanges the token for a session cookie.
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: "http://localhost:5173/reset-password"
+      redirectTo: `${window.location.origin}/auth/confirm`,
     });
 
     if (error) {
@@ -28,7 +33,7 @@ const ForgotPassword = () => {
       <form onSubmit={handleReset} className="max-w-md w-full m-auto">
         <h2 className="font-bold pb-2">Reset Password</h2>
         <p className="pb-4">
-            Remember your password? <Link to="/signin">Back to login</Link>
+            Remember your password? <Link href="/signin">Back to login</Link>
         </p>
 
         <div className="flex flex-col py-4">

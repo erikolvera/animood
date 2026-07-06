@@ -1,31 +1,34 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
 import { vi } from "vitest";
 import LoginForm from "./LoginForm";
 
-// Mock supabase
-vi.mock("../../supabaseClient", () => ({
-  supabase: {
-    auth: {
-      signInWithPassword: vi.fn(),
-    },
-  },
+// vi.mock factories are hoisted above imports, so shared spies must be
+// created with vi.hoisted to be visible inside the factory.
+const mocks = vi.hoisted(() => ({
+  signInWithPassword: vi.fn(),
+  push: vi.fn(),
+  refresh: vi.fn(),
 }));
 
-import { supabase } from "../../supabaseClient";
+vi.mock("@/lib/supabase/client", () => ({
+  createClient: () => ({
+    auth: {
+      signInWithPassword: mocks.signInWithPassword,
+    },
+  }),
+}));
 
-const renderLogin = () =>
-  render(
-    <MemoryRouter>
-      <LoginForm />
-    </MemoryRouter>
-  );
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: mocks.push, refresh: mocks.refresh }),
+}));
+
+const renderLogin = () => render(<LoginForm />);
 
 describe("Login Form", () => {
 
   test("successful login", async () => {
-    supabase.auth.signInWithPassword.mockResolvedValue({ data: {}, error: null });
+    mocks.signInWithPassword.mockResolvedValue({ data: {}, error: null });
 
     renderLogin();
 
@@ -34,11 +37,12 @@ describe("Login Form", () => {
     fireEvent.click(screen.getByRole("button", { name: /login/i }));
 
     await waitFor(() =>
-      expect(supabase.auth.signInWithPassword).toHaveBeenCalledWith({
+      expect(mocks.signInWithPassword).toHaveBeenCalledWith({
         email: "test@example.com",
         password: "Password1!",
       })
     );
+    await waitFor(() => expect(mocks.push).toHaveBeenCalledWith("/dashboard"));
   });
 
   test("empty fields show error", async () => {
@@ -50,7 +54,7 @@ describe("Login Form", () => {
   });
 
   test("invalid login shows supabase error", async () => {
-    supabase.auth.signInWithPassword.mockResolvedValue({
+    mocks.signInWithPassword.mockResolvedValue({
       data: null,
       error: { message: "Invalid login credentials" },
     });
