@@ -4,15 +4,15 @@ import { supabase } from './supabaseClient'
 import ProfilePage from './Pages/ProfilePage'
 import './App.css'
 
-import Signup from './components/Signup'
-import LoginForm from './components/loginForm'
+import Signup from './components/auth/Signup'
+import LoginForm from './components/auth/LoginForm'
 import Dashboard from './Pages/Dashboard'
-import ForgotPassword from './components/ForgotPassword'
-import ResetPassword from './components/ResetPassword'
+import ForgotPassword from './components/auth/ForgotPassword'
+import ResetPassword from './components/auth/ResetPassword'
 import AnimeDetails from "./Pages/AnimeDetails";
 import AnimeEpisodes from './Pages/AnimeEpisodes'
 import SearchResults from './Pages/SearchResults'
-import Navbar from './components/NavBar'
+import Navbar from './components/layout/NavBar'
 import ExplorePage from "./Pages/ExplorePage";
 import ForYouPage from "./Pages/ForYouPage";
 

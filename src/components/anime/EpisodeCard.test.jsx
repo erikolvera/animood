@@ -4,13 +4,13 @@ import { vi } from "vitest";
 import EpisodeCard from "./EpisodeCard";
 
 // Mock supabase
-vi.mock("../supabaseClient", () => ({
+vi.mock("../../supabaseClient", () => ({
   supabase: {
     from: vi.fn(),
   },
 }));
 
-import { supabase } from "../supabaseClient";
+import { supabase } from "../../supabaseClient";
 
 const mockEpisode = {
   mal_id: 5,

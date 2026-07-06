@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
-import PostCard from "../components/PostCard";
-import CreatePostModal from "../components/CreatePostModal";
+import PostCard from "../components/discussion/PostCard";
+import CreatePostModal from "../components/discussion/CreatePostModal";
 
 export default function DiscussionBoard() {
   const { id } = useParams();

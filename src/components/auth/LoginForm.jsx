@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { supabase } from "../supabaseClient";
+import { supabase } from "../../supabaseClient";
 import { Link, useNavigate } from "react-router-dom";
-import bgImage from "../assets/signinAnimood2.png";
+import bgImage from "../../assets/signinAnimood2.png";
 
 const LoginForm = () => {
   const [email, setEmail] = useState("");

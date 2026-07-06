@@ -3,9 +3,9 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { vi } from "vitest";
 import NavBar from "./NavBar";
-import { searchAnime } from "../services/jikanApi";
+import { searchAnime } from "../../services/jikanApi";
 
-vi.mock("../services/jikanApi", () => ({
+vi.mock("../../services/jikanApi", () => ({
     searchAnime: vi.fn(),
 }));
 

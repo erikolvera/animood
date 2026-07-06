@@ -4,7 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { vi } from "vitest";
 import ForgotPassword from "./ForgotPassword";
 
-vi.mock("../supabaseClient", () => ({
+vi.mock("../../supabaseClient", () => ({
   supabase: {
     auth: {
       resetPasswordForEmail: vi.fn(),
@@ -12,7 +12,7 @@ vi.mock("../supabaseClient", () => ({
   },
 }));
 
-import { supabase } from "../supabaseClient";
+import { supabase } from "../../supabaseClient";
 
 const renderPage = () =>
   render(

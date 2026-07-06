@@ -49,11 +49,15 @@ function mockWatchlistFetch(rows) {
 }
 
 function mockStatusUpdate(updatedRow = []) {
+  const selectMock = vi.fn().mockResolvedValue({
+    error: null,
+    data: updatedRow,
+  });
+  const eqMock = vi.fn().mockReturnValue({
+    select: selectMock,
+  });
   mockUpdate.mockReturnValue({
-    eq: vi.fn().mockResolvedValue({
-      error: null,
-      data: updatedRow,
-    }),
+    eq: eqMock,
   });
 }
 

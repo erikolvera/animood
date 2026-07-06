@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
-import EpisodeCard from "../components/EpisodeCard";
+import EpisodeCard from "../components/anime/EpisodeCard";
 
 function AnimeEpisodes() {
   const { id } = useParams();

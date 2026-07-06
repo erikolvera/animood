@@ -2,7 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import DiscussionBoard from './DiscussionBoard'
-import PostCard from '../components/PostCard'
+import PostCard from '../components/discussion/PostCard'
 
 vi.mock('../supabaseClient', () => ({
   supabase: {

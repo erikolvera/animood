@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
-import { searchAnime } from "../services/jikanApi";
-import { supabase } from '../supabaseClient';
-// import MoodBot from './explore/MoodBot';
-import MoodBot from './explore/MoodBot';
+import { searchAnime } from "../../services/jikanApi";
+import { supabase } from '../../supabaseClient';
+// import MoodBot from '../explore/MoodBot';
+import MoodBot from '../explore/MoodBot';
 
 const NavBar = () => {
     const navigate = useNavigate();
@@ -37,9 +37,7 @@ const NavBar = () => {
         return () => clearTimeout(delay);
     }, [query]);
 
-    const [avatarUrl, setAvatarUrl] = useState(
-        "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"
-    );
+    const [avatarUrl, setAvatarUrl] = useState("");
 
     useEffect(() => {
         async function fetchAvatar() {

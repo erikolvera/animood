@@ -5,7 +5,7 @@ import { vi } from "vitest";
 import LoginForm from "./LoginForm";
 
 // Mock supabase
-vi.mock("../supabaseClient", () => ({
+vi.mock("../../supabaseClient", () => ({
   supabase: {
     auth: {
       signInWithPassword: vi.fn(),
@@ -13,7 +13,7 @@ vi.mock("../supabaseClient", () => ({
   },
 }));
 
-import { supabase } from "../supabaseClient";
+import { supabase } from "../../supabaseClient";
 
 const renderLogin = () =>
   render(
