@@ -1,6 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { vi } from "vitest";
 
 const mockSupabase = vi.hoisted(() => ({
@@ -22,11 +21,11 @@ const mockRecommendationService = vi.hoisted(() => ({
   getRecommendations: vi.fn(),
 }));
 
-vi.mock("../supabaseClient", () => ({
-  supabase: mockSupabase,
+vi.mock("@/lib/supabase/client", () => ({
+  createClient: () => mockSupabase,
 }));
 
-vi.mock("../services/onboardingService", () => ({
+vi.mock("../../services/onboardingService", () => ({
   getForYouSignalSummary: mockOnboardingService.getForYouSignalSummary,
   saveGenrePreferences: mockOnboardingService.saveGenrePreferences,
   saveOnboardingResponse: mockOnboardingService.saveOnboardingResponse,
@@ -34,20 +33,14 @@ vi.mock("../services/onboardingService", () => ({
   resetOnboardingData: mockOnboardingService.resetOnboardingData,
 }));
 
-vi.mock("../services/recommendationService", () => ({
+vi.mock("../../services/recommendationService", () => ({
   getRecommendations: mockRecommendationService.getRecommendations,
 }));
 
-import ForYouPage from "./ForYouPage";
+import ForYouClient from "./ForYouClient";
 
-function renderForYou(initialEntry = "/foryou") {
-  return render(
-    <MemoryRouter initialEntries={[initialEntry]}>
-      <Routes>
-        <Route path="/foryou" element={<ForYouPage />} />
-      </Routes>
-    </MemoryRouter>
-  );
+function renderForYou() {
+  return render(<ForYouClient />);
 }
 
 function makeSummary(overrides = {}) {
@@ -478,7 +471,7 @@ describe("recommendationService and related helpers", () => {
 
   test("Recommendations are based on previously disliked anime", async () => {
     const { scoreCandidates } = await vi.importActual(
-      "../services/recommendationService"
+      "../../services/recommendationService"
     );
 
     const candidates = [
@@ -527,7 +520,7 @@ describe("recommendationService and related helpers", () => {
 
   test("Recommendations exclude already rated anime", async () => {
     const { buildExcludedIds } = await vi.importActual(
-      "../services/recommendationService"
+      "../../services/recommendationService"
     );
 
     const excluded = buildExcludedIds({
@@ -545,7 +538,7 @@ describe("recommendationService and related helpers", () => {
 
   test("Recommendations update after user changes a rating", async () => {
     const { scoreCandidates } = await vi.importActual(
-      "../services/recommendationService"
+      "../../services/recommendationService"
     );
 
     const candidates = [
@@ -586,7 +579,7 @@ describe("recommendationService and related helpers", () => {
 
   test("Recommendation results do not contain duplicates", async () => {
     const { dedupeScoredByFranchise } = await vi.importActual(
-      "../services/dedupingService"
+      "../../services/dedupingService"
     );
 
     const deduped = dedupeScoredByFranchise([
@@ -615,7 +608,7 @@ describe("recommendationService and related helpers", () => {
 
   test("Recommendation results contain valid anime entries", async () => {
     const { loadCandidatePool } = await vi.importActual(
-      "../services/recommendationService"
+      "../../services/recommendationService"
     );
 
     mockSupabase.from.mockImplementation(() =>

@@ -1,12 +1,17 @@
-import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import { supabase } from "../supabaseClient";
-import PostCard from "../components/discussion/PostCard";
-import CreatePostModal from "../components/discussion/CreatePostModal";
+"use client";
 
-export default function DiscussionBoard() {
-  const { id } = useParams();
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import PostCard from "./PostCard";
+import CreatePostModal from "./CreatePostModal";
+
+// One component serves both boards: /discussions renders it with
+// animeId={null} (global) and /anime/[id]/discussions passes the id.
+export default function DiscussionBoardClient({ animeId }) {
+  const id = animeId;
   const isGlobal = !id;
+  const supabase = createClient();
 
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,6 +39,7 @@ export default function DiscussionBoard() {
     }
 
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isGlobal]);
 
   // Fetch anime titles for global board
@@ -50,17 +56,11 @@ export default function DiscussionBoard() {
         setAnimeTitles((prev) => ({ ...prev, [animeId]: `Anime #${animeId}` }));
       }
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [posts, isGlobal]);
 
   async function handleCreatePost(title, body) {
-    console.log("Attempting insert with:", {
-      user_id: currentUser?.id,
-      anime_id: isGlobal ? null : parseInt(id),
-      title: title.trim(),
-      body: body.trim(),
-    });
-
-    const { data: insertData, error: insertError } = await supabase
+    const { error: insertError } = await supabase
       .from("discussion_posts")
       .insert({
         user_id: currentUser.id,
@@ -68,8 +68,6 @@ export default function DiscussionBoard() {
         title: title.trim(),
         body: body.trim(),
       });
-
-    console.log("Insert result:", insertData, insertError);
 
     if (insertError) {
       console.error("Insert error:", insertError.message);
@@ -89,8 +87,6 @@ export default function DiscussionBoard() {
     }
 
     const { data, error: fetchError } = await query;
-
-    console.log("Fetch result:", data, fetchError);
 
     if (fetchError) {
       console.error("Fetch error:", fetchError.message);
@@ -127,7 +123,7 @@ export default function DiscussionBoard() {
             </button>
           ) : (
             <Link
-              to="/signin"
+              href="/signin"
               className="px-4 py-2 rounded-full border border-[#b6353a] text-[#b6353a] text-sm font-medium hover:bg-[#b6353a]/10 transition-colors"
             >
               Log in to post

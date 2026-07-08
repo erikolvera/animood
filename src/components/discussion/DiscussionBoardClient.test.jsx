@@ -1,23 +1,18 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import DiscussionBoard from './DiscussionBoard'
-import PostCard from '../components/discussion/PostCard'
+import DiscussionBoardClient from './DiscussionBoardClient'
+import PostCard from './PostCard'
 
-vi.mock('../supabaseClient', () => ({
-  supabase: {
-    auth: { getUser: vi.fn() },
-    from: vi.fn(),
-  },
+// Both DiscussionBoardClient and PostCard call createClient(), so the
+// mock returns one shared supabase object the tests can program.
+const supabase = vi.hoisted(() => ({
+  auth: { getUser: vi.fn() },
+  from: vi.fn(),
 }))
 
-const mockNavigate = vi.fn()
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom')
-  return { ...actual, useNavigate: () => mockNavigate }
-})
-
-import { supabase } from '../supabaseClient'
+vi.mock('@/lib/supabase/client', () => ({
+  createClient: () => supabase,
+}))
 
 const mockUser = { id: 'user-123', email: 'test@example.com' }
 
@@ -66,23 +61,11 @@ function mockChain(resolvedData) {
 }
 
 function renderAnimeBoard(animeId = '21') {
-  return render(
-    <MemoryRouter initialEntries={[`/anime/${animeId}/discussions`]}>
-      <Routes>
-        <Route path="/anime/:id/discussions" element={<DiscussionBoard />} />
-      </Routes>
-    </MemoryRouter>
-  )
+  return render(<DiscussionBoardClient animeId={animeId} />)
 }
 
 function renderGlobalBoard() {
-  return render(
-    <MemoryRouter initialEntries={['/discussions']}>
-      <Routes>
-        <Route path="/discussions" element={<DiscussionBoard />} />
-      </Routes>
-    </MemoryRouter>
-  )
+  return render(<DiscussionBoardClient animeId={null} />)
 }
 
 beforeEach(() => {
@@ -294,38 +277,22 @@ describe('Replying to a post', () => {
 
 describe('Post and reply display', () => {
   it('post shows title', () => {
-    render(
-      <MemoryRouter>
-        <PostCard post={mockAnimePost} currentUser={mockUser} showAnimeLabel={false} />
-      </MemoryRouter>
-    )
+    render(<PostCard post={mockAnimePost} currentUser={mockUser} showAnimeLabel={false} />)
     expect(screen.getByText('Best arc in One Piece?')).toBeInTheDocument()
   })
 
   it('post shows body', () => {
-    render(
-      <MemoryRouter>
-        <PostCard post={mockAnimePost} currentUser={mockUser} showAnimeLabel={false} />
-      </MemoryRouter>
-    )
+    render(<PostCard post={mockAnimePost} currentUser={mockUser} showAnimeLabel={false} />)
     expect(screen.getByText('I think Marineford is the best arc.')).toBeInTheDocument()
   })
 
   it('post shows author username', () => {
-    render(
-      <MemoryRouter>
-        <PostCard post={mockAnimePost} currentUser={mockUser} showAnimeLabel={false} />
-      </MemoryRouter>
-    )
+    render(<PostCard post={mockAnimePost} currentUser={mockUser} showAnimeLabel={false} />)
     expect(screen.getByText('TestUser')).toBeInTheDocument()
   })
 
   it('post shows formatted date', () => {
-    render(
-      <MemoryRouter>
-        <PostCard post={mockAnimePost} currentUser={mockUser} showAnimeLabel={false} />
-      </MemoryRouter>
-    )
+    render(<PostCard post={mockAnimePost} currentUser={mockUser} showAnimeLabel={false} />)
     // Match whatever date the local timezone renders
     const formatted = new Date('2026-04-01T12:00:00Z').toLocaleDateString('en-US', {
       year: 'numeric', month: 'short', day: 'numeric',
@@ -341,11 +308,7 @@ describe('Post and reply display', () => {
       return mockChain([])
     })
 
-    render(
-      <MemoryRouter>
-        <PostCard post={mockAnimePost} currentUser={mockUser} showAnimeLabel={false} />
-      </MemoryRouter>
-    )
+    render(<PostCard post={mockAnimePost} currentUser={mockUser} showAnimeLabel={false} />)
 
     fireEvent.click(screen.getByText(/Replies/))
 
@@ -362,11 +325,7 @@ describe('Post and reply display', () => {
       return mockChain([])
     })
 
-    render(
-      <MemoryRouter>
-        <PostCard post={mockAnimePost} currentUser={mockUser} showAnimeLabel={false} />
-      </MemoryRouter>
-    )
+    render(<PostCard post={mockAnimePost} currentUser={mockUser} showAnimeLabel={false} />)
 
     fireEvent.click(screen.getByText(/Replies/))
 
@@ -381,11 +340,7 @@ describe('Post and reply display', () => {
       return mockChain([])
     })
 
-    render(
-      <MemoryRouter>
-        <PostCard post={mockAnimePost} currentUser={mockUser} showAnimeLabel={false} />
-      </MemoryRouter>
-    )
+    render(<PostCard post={mockAnimePost} currentUser={mockUser} showAnimeLabel={false} />)
 
     fireEvent.click(screen.getByText(/Replies/))
 

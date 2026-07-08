@@ -1,10 +1,13 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "../supabaseClient";
-import { searchAnime } from "../services/jikanApi";
+"use client";
 
-export default function ProfilePage({ logout }) {
-  const navigate = useNavigate();
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { searchAnime } from "../../services/jikanApi";
+
+export default function ProfileClient() {
+  const router = useRouter();
+  const supabase = createClient();
 
   const [currentUser, setCurrentUser] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -30,7 +33,7 @@ export default function ProfilePage({ logout }) {
   useEffect(() => {
     async function loadProfile() {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { navigate("/signin"); return; }
+    if (!user) { router.push("/signin"); return; }
     setCurrentUser(user);
 
     const { data: profileData } = await supabase
@@ -65,7 +68,8 @@ export default function ProfilePage({ logout }) {
     }
 
     loadProfile();
-  }, [navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router]);
 
   function openEdit() {
     setEditUsername(profile?.username || "");
@@ -141,7 +145,8 @@ export default function ProfilePage({ logout }) {
 
   async function handleLogout() {
     await supabase.auth.signOut();
-    logout();
+    router.push("/signin");
+    router.refresh();
   }
 
   async function handleDeleteAccount() {
@@ -155,8 +160,8 @@ export default function ProfilePage({ logout }) {
       const { error } = await supabase.rpc("delete_my_account");
       if (error) throw error;
       await supabase.auth.signOut();
-      logout();
-      navigate("/signup");
+      router.push("/signup");
+      router.refresh();
     } catch (err) {
       setDeleteError(err.message);
     } finally {

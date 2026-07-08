@@ -1,10 +1,15 @@
-import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import { supabase } from "../supabaseClient";
-import EpisodeCard from "../components/anime/EpisodeCard";
+"use client";
 
-function AnimeEpisodes() {
-  const { id } = useParams();
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import EpisodeCard from "./EpisodeCard";
+
+// The server page awaits params and passes the id down, so this
+// component doesn't need useParams at all.
+function AnimeEpisodesClient({ animeId }) {
+  const id = animeId;
+  const supabase = createClient();
 
   const [animeTitle, setAnimeTitle] = useState("");
   const [episodes, setEpisodes] = useState([]);
@@ -108,6 +113,7 @@ function AnimeEpisodes() {
     fetchAnimeTitle();
     fetchCurrentUser();
     fetchEpisodes(1, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   if (episodesLoading && episodes.length === 0) {
@@ -118,14 +124,14 @@ function AnimeEpisodes() {
     return (
       <div style={{ padding: "20px" }}>
         <p style={{ color: "red" }}>{error}</p>
-        <Link to={`/anime/${id}`}>Back to Anime Details</Link>
+        <Link href={`/anime/${id}`}>Back to Anime Details</Link>
       </div>
     );
   }
 
   return (
     <div style={{ padding: "20px" }}>
-      <Link to={`/anime/${id}`}>← Back to Anime Details</Link>
+      <Link href={`/anime/${id}`}>← Back to Anime Details</Link>
 
       <h1>{animeTitle} Episodes</h1>
 
@@ -161,4 +167,4 @@ function AnimeEpisodes() {
   );
 }
 
-export default AnimeEpisodes;
+export default AnimeEpisodesClient;

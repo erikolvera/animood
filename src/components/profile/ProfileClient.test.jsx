@@ -1,29 +1,32 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { MemoryRouter } from 'react-router-dom'
-import ProfilePage from './ProfilePage'
+import ProfileClient from './ProfileClient'
 
-vi.mock('../supabaseClient', () => ({
-  supabase: {
-    auth: {
-      getUser: vi.fn(),
-    },
-    from: vi.fn(),
+const supabase = vi.hoisted(() => ({
+  auth: {
+    getUser: vi.fn(),
   },
+  from: vi.fn(),
 }))
 
-vi.mock('../services/jikanApi', () => ({
+const mockRouter = vi.hoisted(() => ({
+  push: vi.fn(),
+  refresh: vi.fn(),
+}))
+
+vi.mock('@/lib/supabase/client', () => ({
+  createClient: () => supabase,
+}))
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => mockRouter,
+}))
+
+vi.mock('../../services/jikanApi', () => ({
   searchAnime: vi.fn(),
 }))
 
-const mockNavigate = vi.fn()
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom')
-  return { ...actual, useNavigate: () => mockNavigate }
-})
-
-import { supabase } from '../supabaseClient'
-import { searchAnime } from '../services/jikanApi'
+import { searchAnime } from '../../services/jikanApi'
 
 function mockSupabaseChain(returnValue) {
   const chain = {
@@ -61,11 +64,7 @@ const mockReviews = [
 ]
 
 function renderProfilePage() {
-  return render(
-    <MemoryRouter>
-      <ProfilePage />
-    </MemoryRouter>
-  )
+  return render(<ProfileClient />)
 }
 
 beforeEach(() => {
@@ -101,7 +100,7 @@ describe('ProfilePage', () => {
       supabase.auth.getUser.mockResolvedValue({ data: { user: null } })
       renderProfilePage()
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('/signin')
+        expect(mockRouter.push).toHaveBeenCalledWith('/signin')
       })
     })
 

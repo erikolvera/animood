@@ -1,9 +1,12 @@
-import { useEffect, useState } from "react";
-import { useSearchParams, Link } from "react-router-dom";
-import { searchAnime } from "../services/jikanApi";
+"use client";
 
-export default function SearchResults() {
-  const [searchParams] = useSearchParams();
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { searchAnime } from "../../services/jikanApi";
+
+export default function SearchResultsClient() {
+  const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
 
   const [animeResults, setAnimeResults] = useState([]);
@@ -45,7 +48,7 @@ export default function SearchResults() {
         {animeResults.map((anime) => (
           <Link
             key={anime.mal_id}
-            to={`/anime/${anime.mal_id}`}
+            href={`/anime/${anime.mal_id}`}
             className="flex flex-col gap-2 group cursor-pointer"
           >
             <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-200">

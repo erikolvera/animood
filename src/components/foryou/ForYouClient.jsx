@@ -1,20 +1,24 @@
+"use client";
+
 import { useEffect, useState, useCallback } from "react";
-import { supabase } from "../supabaseClient";
-import { getRecommendations } from "../services/recommendationService";
-import { Link } from "react-router-dom";
-import OnboardingIntro from "../components/foryou/OnboardingIntro";
-import GenrePreferenceStep from "../components/foryou/GenrePreferenceStep";
-import ReactionCard from "../components/foryou/ReactionCard";
+import { createClient } from "@/lib/supabase/client";
+import { getRecommendations } from "../../services/recommendationService";
+import Link from "next/link";
+import OnboardingIntro from "./OnboardingIntro";
+import GenrePreferenceStep from "./GenrePreferenceStep";
+import ReactionCard from "./ReactionCard";
 import {
   getForYouSignalSummary,
   saveGenrePreferences,
   saveOnboardingResponse,
   getOnboardingCandidates,
   resetOnboardingData,
-} from "../services/onboardingService";
-import "../styles/forYou.css";
+} from "../../services/onboardingService";
+import "../../styles/forYou.css";
 
-function ForYouPage() {
+const supabase = createClient();
+
+function ForYouClient() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -673,7 +677,7 @@ function ForYouPage() {
             <p className="mb-2 foryou-muted">
               We need a bit more information to personalize your recommendations.
             </p>
-            <Link to="/profile" className="foryou-link underline">
+            <Link href="/profile" className="foryou-link underline">
               Edit your profile favorites
             </Link>
           </div>
@@ -708,7 +712,7 @@ function ForYouPage() {
                 <div key={anime.mal_id} className="foryou-card">
                   <div className="flex gap-4">
                     <Link
-                      to={`/anime/${anime.mal_id}`}
+                      href={`/anime/${anime.mal_id}`}
                       className="shrink-0 foryou-link"
                     >
                       {anime.image_url ? (
@@ -726,7 +730,7 @@ function ForYouPage() {
 
                     <div className="flex-1 min-w-0">
                       <Link
-                        to={`/anime/${anime.mal_id}`}
+                        href={`/anime/${anime.mal_id}`}
                         className="foryou-link"
                       >
                         <h2 className="font-semibold">
@@ -821,4 +825,4 @@ function ForYouPage() {
   );
 }
 
-export default ForYouPage;
+export default ForYouClient;

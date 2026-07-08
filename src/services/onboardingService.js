@@ -1,4 +1,4 @@
-import { supabase } from "../supabaseClient";
+import { createClient } from "@/lib/supabase/client";
 import { upsertAnimeCache } from "./animeCacheService";
 import {
   dedupeByFranchise,
@@ -6,6 +6,8 @@ import {
   getFranchiseKey,
   filterObviousBadEntryPoints
 } from "./dedupingService";
+
+const supabase = createClient();
 
 const MINIMUM_SIGNALS = 20;
 

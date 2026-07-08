@@ -1,7 +1,6 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
 import { vi, beforeEach, describe, test, expect } from "vitest";
-import WatchList from "./WatchList";
+import WatchListClient from "./WatchListClient";
 
 const mockGetUser = vi.fn();
 const mockSelect = vi.fn();
@@ -10,12 +9,12 @@ const mockOrder = vi.fn();
 const mockUpdate = vi.fn();
 const mockDelete = vi.fn();
 
-vi.mock("../supabaseClient", () => ({
-  supabase: {
+vi.mock("@/lib/supabase/client", () => ({
+  createClient: () => ({
     auth: {
       getUser: (...args) => mockGetUser(...args),
     },
-    from: vi.fn((tableName) => {
+    from: (tableName) => {
       if (tableName !== "watchlists") {
         throw new Error(`Unexpected table: ${tableName}`);
       }
@@ -25,16 +24,12 @@ vi.mock("../supabaseClient", () => ({
         update: (...args) => mockUpdate(...args),
         delete: (...args) => mockDelete(...args),
       };
-    }),
-  },
+    },
+  }),
 }));
 
 function renderWatchList() {
-  return render(
-    <MemoryRouter>
-      <WatchList />
-    </MemoryRouter>
-  );
+  return render(<WatchListClient />);
 }
 
 function mockWatchlistFetch(rows) {
@@ -117,7 +112,7 @@ describe("WatchList", () => {
         anime_id: 52991,
         title: "Sousou no Frieren",
         image_url: "https://example.com/frieren.jpg",
-        status: "plan_to_watch",
+        status: "planned",
         created_at: "2026-04-10T12:00:00Z",
       },
     ]);
@@ -149,7 +144,7 @@ describe("WatchList", () => {
         anime_id: 52991,
         title: "Sousou no Frieren",
         image_url: "https://example.com/frieren.jpg",
-        status: "plan_to_watch",
+        status: "planned",
         created_at: "2026-04-10T12:00:00Z",
       },
     ]);
@@ -183,7 +178,7 @@ describe("WatchList", () => {
         anime_id: 52991,
         title: "Sousou no Frieren",
         image_url: "https://example.com/frieren.jpg",
-        status: "plan_to_watch",
+        status: "planned",
         created_at: "2026-04-10T12:00:00Z",
       },
     ]);

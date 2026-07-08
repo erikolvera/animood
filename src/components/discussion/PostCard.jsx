@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { supabase } from "../../supabaseClient";
-import { Link } from "react-router-dom";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 
 export default function PostCard({ post, currentUser, animeTitle, showAnimeLabel }) {
+  const supabase = createClient();
   const [showReplies, setShowReplies] = useState(false);
   const [replies, setReplies] = useState([]);
   const [repliesLoaded, setRepliesLoaded] = useState(false);
@@ -55,7 +56,7 @@ export default function PostCard({ post, currentUser, animeTitle, showAnimeLabel
       {/* Anime label (global board only) */}
       {showAnimeLabel && post.anime_id && (
         <Link
-          to={`/anime/${post.anime_id}`}
+          href={`/anime/${post.anime_id}`}
           className="text-xs text-[#b6353a] font-medium mb-2 block hover:underline"
         >
           {animeTitle || `Anime #${post.anime_id}`}
@@ -144,7 +145,7 @@ export default function PostCard({ post, currentUser, animeTitle, showAnimeLabel
             </div>
           ) : (
             <p className="text-xs text-stone-500">
-              <Link to="/signin" className="text-[#b6353a] hover:underline">Log in</Link> to reply
+              <Link href="/signin" className="text-[#b6353a] hover:underline">Log in</Link> to reply
             </p>
           )}
         </div>
