@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Vite build output from the pre-migration app:
     "dist/**",
+    // Deno edge function — not part of the Next.js/Node toolchain:
+    "supabase/functions/**",
   ]),
 ]);
 

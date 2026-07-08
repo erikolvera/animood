@@ -29,24 +29,31 @@ Built by a four-person team.
 
 | Layer | Technology |
 |---|---|
-| Front end | React 19, React Router 7 |
+| Framework | Next.js 16 (App Router, Server Components), React 19, TypeScript |
 | Styling / UI | Tailwind CSS 4, Headless UI, Heroicons |
-| Backend / DB | Supabase (hosted Postgres, Auth, Edge Functions) |
+| Backend / DB | Supabase (hosted Postgres, Auth via `@supabase/ssr` cookie sessions, Edge Functions) |
 | Anime catalog | [Jikan API](https://jikan.moe/) (MyAnimeList data) |
-| AI | Google Gemini (`@google/genai`) |
-| Build tool | Vite 7 |
+| AI | Google Gemini (`@google/genai`), server-side via a Next.js Route Handler |
 | Testing | Vitest + React Testing Library |
+
+> Originally built as a Vite + React Router SPA, then fully migrated to Next.js —
+> server-rendered detail pages, cookie-based auth with middleware route protection,
+> and the Gemini API key moved off the client.
 
 ## Architecture
 
 ```
-React (Vite) SPA
-   ├─ Supabase Auth ........ accounts, sessions
-   ├─ Supabase Postgres .... profiles, watchlist, preferences, cached anime
+Next.js 16 (App Router)
+   ├─ proxy.ts (middleware) .... Supabase session refresh + route guards
+   ├─ Server Components ........ SSR anime detail pages, per-title metadata,
+   │                             cached Jikan fetches (revalidate: 1h)
+   ├─ /api/moodbot ............. Route Handler proxying Google Gemini
+   │                             (API key never ships to the browser)
+   ├─ Supabase Auth ............ accounts, cookie sessions (@supabase/ssr)
+   ├─ Supabase Postgres ........ profiles, watchlist, preferences, cached anime
    │     └─ Row-Level Security policies + triggers (src/database/*.sql)
    ├─ Supabase Edge Function (Deno) ... secure account deletion
-   ├─ Jikan API ............ anime catalog, search, details
-   └─ Google Gemini ........ MoodBot mood → genre interpretation
+   └─ Jikan API ................ anime catalog, search, details
 ```
 
 The database layer is defined as SQL in [`src/database/`](src/database): `schema.sql`
@@ -57,6 +64,9 @@ The database layer is defined as SQL in [`src/database/`](src/database): `schema
 
 ```
 User types a mood
+        │
+        ▼
+POST /api/moodbot (Next.js Route Handler, auth-gated, key server-side)
         │
         ▼
 Google Gemini  ──►  returns strict JSON: { friendly_message, genres: [ids] }
@@ -88,59 +98,71 @@ the watchlist, and the original authentication/testing foundation.
 - **Created the authentication foundation** — signup form with client-side validation and
   the project's first automated tests (Vitest + React Testing Library), and integrated
   React Router for the auth flow.
+- **Migrated the entire app from a Vite SPA to Next.js 16 (App Router)** — Server
+  Components with cached data fetching and per-title metadata, cookie-based Supabase auth
+  with middleware route protection, and a Route Handler that moved the Gemini API key
+  server-side; kept the full test suite (120 tests) green throughout.
 
 ## Getting started
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173
+npm run dev        # http://localhost:3000
 ```
 
 ```bash
 npm run build      # production build
-npm run preview    # serve the production build
+npm start          # serve the production build
 npm run test       # run the Vitest suite
 npm run lint       # run ESLint
 ```
 
 ### Environment variables
 
-Create a `.env` file in the project root:
+Create a `.env.local` file in the project root:
 
 ```bash
-VITE_GEMINI_API_KEY=your_google_gemini_api_key
-# Supabase project URL and anon key are configured in src/supabaseClient.js
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
+GEMINI_API_KEY=your_google_gemini_api_key   # server-only: no NEXT_PUBLIC_ prefix
 ```
 
-> The Supabase **anon** key is safe to expose in the browser — access is governed by the
-> Row-Level Security policies in `src/database/policies.sql`. The Gemini key is read from
-> `.env` and is **not** committed (`.env` is git-ignored).
+> The Supabase **publishable** key is safe to expose in the browser — access is governed
+> by the Row-Level Security policies in `src/database/policies.sql`. The Gemini key has no
+> `NEXT_PUBLIC_` prefix, so Next.js keeps it server-side; it is only used inside the
+> `/api/moodbot` Route Handler.
 
 ## Project structure
 
 ```
 src/
+├── app/                        # Next.js App Router
+│   ├── (auth)/                 # signin, signup, forgot/reset password (no navbar)
+│   ├── (main)/                 # navbar layout: dashboard, explore, search, foryou,
+│   │   └── anime/[id]/         #   watchlist, profile, discussions, anime details
+│   ├── api/moodbot/route.ts    # Gemini proxy (server-side API key)
+│   └── auth/confirm/route.ts   # PKCE token exchange for password reset
+├── proxy.ts                    # middleware: session refresh + route guards
+├── lib/supabase/               # browser/server/middleware Supabase clients
 ├── components/
-│   ├── NavBar.jsx              # global search + autocomplete
+│   ├── layout/NavBar.jsx       # global search + autocomplete
 │   ├── explore/MoodBot.jsx     # AI mood chatbot (slide-over)
-│   ├── foryou/                 # onboarding reaction cards
-│   ├── anime/                  # AnimeCard, AnimeGrid
-│   ├── Signup.jsx / loginForm.jsx
-│   └── *.test.jsx              # Vitest suites
+│   ├── foryou/                 # onboarding reaction cards + For You feed
+│   ├── anime/                  # AnimeCard, ratings, watchlist toggle, episodes
+│   └── **/*.test.jsx           # Vitest suites (120 tests)
 ├── services/
-│   ├── aiService.js            # Google Gemini: mood → genres
+│   ├── aiService.ts            # client wrapper for /api/moodbot
 │   ├── jikanApi.js             # anime catalog client
 │   ├── recommendationService.js# scoring + explanations
 │   ├── onboardingService.js    # preference onboarding
 │   ├── animeCacheService.js    # cache layer
 │   └── dedupingService.js      # de-duplicate sequels/spin-offs
-├── Pages/                      # Explore, ForYou, WatchList, SearchResults,
-│                               #   AnimeDetails, ProfilePage, Dashboard
-├── database/                   # schema.sql, policies.sql (RLS), triggers.sql
-└── supabaseClient.js
+└── database/                   # schema.sql, policies.sql (RLS), triggers.sql
 
 supabase/
 └── functions/delete-user/      # Deno edge function for account deletion
+scripts/
+└── seedAnimeCache.mjs          # seed anime_cache from Jikan top anime
 ```
 
 ## Team

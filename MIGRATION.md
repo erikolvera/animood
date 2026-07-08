@@ -1,26 +1,26 @@
 # AniMood → Next.js Migration Guide
 
-Branch: `nextjs-migration`. Plumbing (auth, layout, MoodBot API) and two teaching
-examples are done. **Your job: port the 6 remaining routes from `src/legacy-pages/`
-following the recipe below.** Delete each legacy file (and its test) once its
-port is green.
+Branch: `nextjs-migration`. **Migration complete** — all 15 routes ported, SPA
+remnants deleted, `react-router-dom` uninstalled, `next build` + 120 tests green.
+This document is kept as the reference for the patterns used (and for porting any
+future pages).
 
 ## Status
 
 | Route | File | Status |
 |---|---|---|
-| `/signin` `/signup` `/forgot-password` `/reset-password` | `src/app/(auth)/*` | ✅ done (full TSX rewrite example) |
-| `/anime/[id]` | `src/app/(main)/anime/[id]/page.tsx` | ✅ done — **Server Component teaching example** |
-| `/explore` | `src/app/(main)/explore/page.tsx` | ✅ done — **client page teaching example** |
-| `/dashboard` | `src/legacy-pages/Dashboard.jsx` | ⬜ yours (placeholder page exists) — start here, it's 45 lines |
-| `/search` | `src/legacy-pages/SearchResults.jsx` | ⬜ yours — copies the Explore pattern |
-| `/anime/[id]/episodes` | `src/legacy-pages/AnimeEpisodes.jsx` | ⬜ yours |
-| `/watchlist` | `src/legacy-pages/WatchList.jsx` | ⬜ yours — fix `plan_to_watch` → `planned` (DB constraint!) |
-| `/discussions` + `/anime/[id]/discussions` | `src/legacy-pages/DiscussionBoard.jsx` | ⬜ yours — ONE shared client component, TWO thin page wrappers |
-| `/profile` | `src/legacy-pages/ProfilePage.jsx` | ⬜ yours |
-| `/foryou` | `src/legacy-pages/ForYouPage.jsx` | ⬜ yours — biggest, but purely mechanical |
+| `/signin` `/signup` `/forgot-password` `/reset-password` | `src/app/(auth)/*` | ✅ full TSX rewrite example |
+| `/anime/[id]` | `src/app/(main)/anime/[id]/page.tsx` | ✅ **Server Component teaching example** |
+| `/explore` | `src/app/(main)/explore/page.tsx` | ✅ **client page teaching example** |
+| `/dashboard` | `src/components/dashboard/DashboardClient.jsx` | ✅ |
+| `/search` | `src/components/search/SearchResultsClient.jsx` | ✅ Suspense + useSearchParams |
+| `/anime/[id]/episodes` | `src/components/anime/AnimeEpisodesClient.jsx` | ✅ server page passes awaited param as prop |
+| `/watchlist` | `src/components/watchlist/WatchListClient.jsx` | ✅ incl. `plan_to_watch` → `planned` fix |
+| `/discussions` + `/anime/[id]/discussions` | `src/components/discussion/DiscussionBoardClient.jsx` | ✅ one component, two thin wrappers |
+| `/profile` | `src/components/profile/ProfileClient.jsx` | ✅ incl. undefined-logout-prop fix |
+| `/foryou` | `src/components/foryou/ForYouClient.jsx` | ✅ mechanical client port |
 
-`src/legacy-pages/Signup.jsx` is an unrouted duplicate — just delete it.
+Remaining: the manual dashboard tasks below, then the Vercel deploy.
 
 ## The two patterns (study these first)
 

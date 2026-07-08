@@ -35,7 +35,7 @@ export default function SearchResultsClient() {
   return (
     <div className="max-w-[1440px] mx-auto px-8 py-8">
       <h1 className="text-3xl font-bold 800 mb-6">
-        Search Results for "{query}"
+        Search Results for &quot;{query}&quot;
       </h1>
 
       {loading && <p className="500">Loading results...</p>}

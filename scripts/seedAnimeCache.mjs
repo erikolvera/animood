@@ -1,4 +1,11 @@
-import { supabase } from "../../supabaseClient.js";
+// Seeds the Supabase anime_cache table from Jikan's top anime.
+// Run with: node --env-file=.env.local scripts/seedAnimeCache.mjs [pages]
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+);
 
 const BASE_URL = "https://api.jikan.moe/v4";
 
@@ -65,7 +72,7 @@ async function seedTopAnime(pages = 3, delayMs = 500) {
 
   console.log(`Upserting ${unique.length} anime...`);
 
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from("anime_cache")
     .upsert(unique, { onConflict: "mal_id" });
 
