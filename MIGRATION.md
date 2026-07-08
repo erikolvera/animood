@@ -89,10 +89,14 @@ Remaining: the manual dashboard tasks below, then the Vercel deploy.
 
 ## Your non-code tasks (dashboard clicks, one-time)
 
-1. **Rotate the Gemini key** in Google AI Studio (the old one shipped in Vite bundles), update `GEMINI_API_KEY` in `.env.local`.
-2. **Supabase → Auth → Email Templates → Reset Password**: change the link to
-   `<a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=recovery&next=/reset-password">Reset password</a>`
-3. **Supabase → Auth → URL Configuration**: add `http://localhost:3000/**` to allowed redirect URLs (prod URLs come at deploy time).
+1. **Rotate the Gemini key** in Google AI Studio (the old one shipped in Vite bundles), update `GEMINI_API_KEY` in `.env.local`. ✅ done — remember to also *revoke* the old key.
+2. ~~Supabase email template edit~~ — not needed: the built-in mailer can't edit
+   templates without custom SMTP, so `/auth/confirm` handles the default
+   template's PKCE `?code=` link instead (same-browser only). If you later add
+   custom SMTP, switch the Reset Password template to
+   `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/reset-password`
+   for cross-browser resets.
+3. **Supabase → Authentication → URL Configuration**: add `http://localhost:3000/**` to allowed redirect URLs (prod URLs come at deploy time).
 
 ## Commands
 

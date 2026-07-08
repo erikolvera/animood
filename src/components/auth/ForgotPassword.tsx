@@ -15,10 +15,11 @@ const ForgotPassword = () => {
     setError("");
     setMessage("");
 
-    // The email template appends token_hash + type and forwards through
-    // /auth/confirm, which exchanges the token for a session cookie.
+    // The default Supabase email routes through its verify endpoint, then
+    // back to /auth/confirm with a PKCE code (plus our `next` param), which
+    // exchanges it for a session cookie before showing the reset form.
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/confirm`,
+      redirectTo: `${window.location.origin}/auth/confirm?next=/reset-password`,
     });
 
     if (error) {
