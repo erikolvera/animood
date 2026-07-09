@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import Link from "next/link";
 
 function getImageUrl(anime) {
   return (
@@ -54,7 +54,7 @@ function ReactionCard({
             </h3>
 
             <Link
-              to={`/anime/${anime.mal_id}`}
+              href={`/anime/${anime.mal_id}`}
               className="text-sm underline shrink-0 foryou-link"
             >
               View Details

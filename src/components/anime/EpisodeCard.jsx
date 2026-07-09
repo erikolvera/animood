@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../../supabaseClient";
+import { createClient } from "@/lib/supabase/client";
+
+const supabase = createClient();
 
 function formatDate(dateString) {
   return new Date(dateString).toLocaleDateString("en-US", {

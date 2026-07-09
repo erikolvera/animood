@@ -1,25 +1,26 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
 import { vi } from "vitest";
 import ResetPassword from "./ResetPassword";
 
-vi.mock("../../supabaseClient", () => ({
-  supabase: {
-    auth: {
-      updateUser: vi.fn(),
-    },
-  },
+const mocks = vi.hoisted(() => ({
+  updateUser: vi.fn(),
+  push: vi.fn(),
 }));
 
-import { supabase } from "../../supabaseClient";
+vi.mock("@/lib/supabase/client", () => ({
+  createClient: () => ({
+    auth: {
+      updateUser: mocks.updateUser,
+    },
+  }),
+}));
 
-const renderPage = () =>
-  render(
-    <MemoryRouter>
-      <ResetPassword />
-    </MemoryRouter>
-  );
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: mocks.push }),
+}));
+
+const renderPage = () => render(<ResetPassword />);
 
 describe("Reset Password", () => {
 
@@ -35,7 +36,7 @@ describe("Reset Password", () => {
   });
 
   test("successful password update", async () => {
-    supabase.auth.updateUser.mockResolvedValue({ error: null });
+    mocks.updateUser.mockResolvedValue({ error: null });
 
     renderPage();
 
@@ -45,7 +46,7 @@ describe("Reset Password", () => {
     fireEvent.click(screen.getByRole("button", { name: /update password/i }));
 
     await waitFor(() =>
-      expect(supabase.auth.updateUser).toHaveBeenCalled()
+      expect(mocks.updateUser).toHaveBeenCalled()
     );
   });
 

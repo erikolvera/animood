@@ -1,7 +1,8 @@
+"use client";
+
 import { useEffect, useState, useRef } from "react";
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle, TransitionChild } from '@headlessui/react'
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { useNavigate, useSearchParams } from "react-router-dom";
 import { getGenresFromMood } from "../../services/aiService";
 
 // import ExploreControls from "./ExploreControls";

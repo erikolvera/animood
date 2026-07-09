@@ -1,30 +1,26 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
 import { vi } from "vitest";
 import ForgotPassword from "./ForgotPassword";
 
-vi.mock("../../supabaseClient", () => ({
-  supabase: {
-    auth: {
-      resetPasswordForEmail: vi.fn(),
-    },
-  },
+const mocks = vi.hoisted(() => ({
+  resetPasswordForEmail: vi.fn(),
 }));
 
-import { supabase } from "../../supabaseClient";
+vi.mock("@/lib/supabase/client", () => ({
+  createClient: () => ({
+    auth: {
+      resetPasswordForEmail: mocks.resetPasswordForEmail,
+    },
+  }),
+}));
 
-const renderPage = () =>
-  render(
-    <MemoryRouter>
-      <ForgotPassword />
-    </MemoryRouter>
-  );
+const renderPage = () => render(<ForgotPassword />);
 
 describe("Forgot Password", () => {
 
   test("sends reset email successfully", async () => {
-    supabase.auth.resetPasswordForEmail.mockResolvedValue({ error: null });
+    mocks.resetPasswordForEmail.mockResolvedValue({ error: null });
 
     renderPage();
 
@@ -37,7 +33,7 @@ describe("Forgot Password", () => {
   });
 
   test("shows error if supabase fails", async () => {
-    supabase.auth.resetPasswordForEmail.mockResolvedValue({
+    mocks.resetPasswordForEmail.mockResolvedValue({
       error: { message: "User not found" },
     });
 

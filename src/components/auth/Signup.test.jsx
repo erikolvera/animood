@@ -1,26 +1,21 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
 import { vi } from "vitest";
 import Signup from "./Signup";
 
-// Mock supabase
-vi.mock("../../supabaseClient", () => ({
-  supabase: {
-    auth: {
-      signUp: vi.fn(),
-    },
-  },
+const mocks = vi.hoisted(() => ({
+  signUp: vi.fn(),
 }));
 
-import { supabase } from "../../supabaseClient";
+vi.mock("@/lib/supabase/client", () => ({
+  createClient: () => ({
+    auth: {
+      signUp: mocks.signUp,
+    },
+  }),
+}));
 
-const renderSignup = () =>
-  render(
-    <MemoryRouter>
-      <Signup />
-    </MemoryRouter>
-  );
+const renderSignup = () => render(<Signup />);
 
 describe("Signup Form", () => {
   beforeEach(() => {
@@ -28,7 +23,7 @@ describe("Signup Form", () => {
   });
 
   test("successful sign up with valid credentials", async () => {
-    supabase.auth.signUp.mockResolvedValue({ error: null });
+    mocks.signUp.mockResolvedValue({ error: null });
     renderSignup();
 
     await userEvent.type(screen.getByPlaceholderText("Username"), "testuser");
@@ -37,7 +32,7 @@ describe("Signup Form", () => {
     await userEvent.type(screen.getByPlaceholderText("Confirm Password"), "Password1!");
     fireEvent.click(screen.getByRole("button", { name: /register/i }));
 
-    await waitFor(() => expect(supabase.auth.signUp).toHaveBeenCalledWith({
+    await waitFor(() => expect(mocks.signUp).toHaveBeenCalledWith({
       email: "test@example.com",
       password: "Password1!",
       options: { data: { username: "testuser" } },
@@ -57,7 +52,7 @@ describe("Signup Form", () => {
   });
 
   test("duplicate email shows correct error", async () => {
-    supabase.auth.signUp.mockResolvedValue({ error: { message: "User already registered" } });
+    mocks.signUp.mockResolvedValue({ error: { message: "User already registered" } });
     renderSignup();
 
     await userEvent.type(screen.getByPlaceholderText("Username"), "testuser");
@@ -113,7 +108,7 @@ describe("Signup Form", () => {
   });
 
   test("valid email formats are accepted", async () => {
-    supabase.auth.signUp.mockResolvedValue({ error: null });
+    mocks.signUp.mockResolvedValue({ error: null });
     renderSignup();
 
     await userEvent.type(screen.getByPlaceholderText("Username"), "testuser");
@@ -122,7 +117,7 @@ describe("Signup Form", () => {
     await userEvent.type(screen.getByPlaceholderText("Confirm Password"), "Password1!");
     fireEvent.click(screen.getByRole("button", { name: /register/i }));
 
-    await waitFor(() => expect(supabase.auth.signUp).toHaveBeenCalled());
+    await waitFor(() => expect(mocks.signUp).toHaveBeenCalled());
   });
 
 });

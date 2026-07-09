@@ -1,4 +1,6 @@
-import { supabase } from "../supabaseClient";
+import { createClient } from "@/lib/supabase/client";
+
+const supabase = createClient();
 
 const BASE_URL = "https://api.jikan.moe/v4";
 

@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import Link from "next/link";
 
 function OnboardingIntro({
   profileFavorites = [],
@@ -61,7 +61,7 @@ function OnboardingIntro({
           </div>
 
           <div className="mt-4">
-            <Link to="/profile" className="text-sm underline foryou-link">
+            <Link href="/profile" className="text-sm underline foryou-link">
               Edit favorites in profile
             </Link>
           </div>

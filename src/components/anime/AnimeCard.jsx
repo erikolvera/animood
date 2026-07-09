@@ -1,9 +1,9 @@
-import { Link } from "react-router-dom";
+import Link from "next/link";
 
 function AnimeCard({ anime }) {
   return (
     <Link
-      to={`/anime/${anime.mal_id}`}
+      href={`/anime/${anime.mal_id}`}
       className="flex flex-col gap-2 group cursor-pointer"
     >
       <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-200">
