@@ -5,6 +5,8 @@ app where you can search a huge catalog, build a personal watchlist, get recomme
 tuned to your taste, and — the centerpiece — chat with **MoodBot**, an AI assistant that
 turns a sentence about your mood into spot-on anime suggestions.
 
+**🔗 Live demo: [animood-eta.vercel.app](https://animood-eta.vercel.app)**
+
 Built by a four-person team.
 
 ---
@@ -35,6 +37,7 @@ Built by a four-person team.
 | Anime catalog | [Jikan API](https://jikan.moe/) (MyAnimeList data) |
 | AI | Google Gemini (`@google/genai`), server-side via a Next.js Route Handler |
 | Testing | Vitest + React Testing Library |
+| Deployment | Vercel — [animood-eta.vercel.app](https://animood-eta.vercel.app) |
 
 > Originally built as a Vite + React Router SPA, then fully migrated to Next.js —
 > server-rendered detail pages, cookie-based auth with middleware route protection,
