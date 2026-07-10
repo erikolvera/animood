@@ -111,6 +111,11 @@ the watchlist, and the original authentication/testing foundation.
 
 ## Getting started
 
+**Just want to try it?** No setup needed — the app is live at
+**[animood-eta.vercel.app](https://animood-eta.vercel.app)**.
+
+To run it locally instead:
+
 ```bash
 npm install
 npm run dev        # http://localhost:3000
