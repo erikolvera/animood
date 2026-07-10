@@ -37,7 +37,7 @@ Built by a four-person team.
 | Anime catalog | [Jikan API](https://jikan.moe/) (MyAnimeList data) |
 | AI | Google Gemini (`@google/genai`), server-side via a Next.js Route Handler |
 | Testing | Vitest + React Testing Library |
-| Deployment | Vercel — [animood-eta.vercel.app](https://animood-eta.vercel.app) |
+| Deployment | Vercel with Git-integrated CI/CD — pushes to `main` auto-deploy to [animood-eta.vercel.app](https://animood-eta.vercel.app); every branch/PR gets a preview URL |
 
 > Originally built as a Vite + React Router SPA, then fully migrated to Next.js —
 > server-rendered detail pages, cookie-based auth with middleware route protection,
@@ -104,7 +104,10 @@ the watchlist, and the original authentication/testing foundation.
 - **Migrated the entire app from a Vite SPA to Next.js 16 (App Router)** — Server
   Components with cached data fetching and per-title metadata, cookie-based Supabase auth
   with middleware route protection, and a Route Handler that moved the Gemini API key
-  server-side; kept the full test suite (120 tests) green throughout.
+  server-side (rotating the previously client-exposed key); kept the full test suite
+  (120 tests) green throughout.
+- **Deployed to production on Vercel** with Git-integrated CI/CD — pushes to `main`
+  build and ship automatically, branches get isolated preview deployments.
 
 ## Getting started
 
@@ -134,6 +137,15 @@ GEMINI_API_KEY=your_google_gemini_api_key   # server-only: no NEXT_PUBLIC_ prefi
 > by the Row-Level Security policies in `src/database/policies.sql`. The Gemini key has no
 > `NEXT_PUBLIC_` prefix, so Next.js keeps it server-side; it is only used inside the
 > `/api/moodbot` Route Handler.
+
+### Seeding the anime cache (optional)
+
+The For You feed recommends from a cached catalog. On a fresh Supabase project,
+populate it from Jikan's top anime:
+
+```bash
+node --env-file=.env.local scripts/seedAnimeCache.mjs 3   # pages of top anime to fetch
+```
 
 ## Project structure
 
